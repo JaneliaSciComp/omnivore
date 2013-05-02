@@ -799,9 +799,13 @@ function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool)
 persistent time0
 
 tic;
-if M1.Data(1)==0  return;  end
+%if M1.Data(1)==0  return;  end
 
-[data time metadata]=getdata(vi,pool);
+try
+  [data time metadata]=getdata(vi,pool);
+catch
+  [data time metadata]=getdata(vi);
+end
 
 if(~isempty(time0))
   M.Data(2)=length(time)/(time(end)-time0);
@@ -876,6 +880,20 @@ while M{1}.Data(1)
 end
 
 stop([vi{:}]);
+
+flag=true;
+while flag
+  flag=false;
+  for i=1:n
+    if(~save(i))  continue;  end
+    M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
+    if(M{1+i}.Data(1)>0)
+      flag=true;
+      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool)
+    end
+  end
+end
+
 delete([vi{:}]);
 M=[];
 
@@ -894,8 +912,8 @@ end
 %if(handles.video.on && isfield(handles.video,'M') && (~isempty(handles.video.M)))
 nsave=sum(handles.video.save);
 if(handles.video.on && (nsave>0) && ...
-      isfield(handles.video,'M') && (handles.video.M{1+handles.video.curr}.Data(4)>0))
-  set(handles.VideoFramesAvailableText,'string',num2str(handles.video.M{1+handles.video.curr}.Data(1)));
+      isfield(handles.video,'M') && ~isempty(handles.video.M) && (handles.video.M{1+handles.video.curr}.Data(4)>0))
+  set(handles.VideoFramesAvailable,'string',num2str(handles.video.M{1+handles.video.curr}.Data(1)));
   set(handles.VideoFPSAchieved,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(2))));
   set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(3))));
   if(nsave>1)
@@ -1065,7 +1083,7 @@ if(~handles.running)
   end
   handles.triggertime=clock;
   
-  handles.timer.update_display=timer('Name','update display','Period',0.1,'ExecutionMode','fixedRate',...
+  handles.timer.update_display=timer('Name','update display','Period',1,'ExecutionMode','fixedRate',...
       'TimerFcn',@(hObject,eventdata)display_callback(hObject,eventdata,handles));
   start(handles.timer.update_display);
 
@@ -1109,8 +1127,9 @@ elseif(handles.running)
 
   if(handles.video.on && (sum(handles.video.save)>0))
     handles.video.M{1}.Data(1)=0;
+    while(sum(cellfun(@(x) x.Data(1),handles.video.M(2:end)))>0)  pause(1);  end
     wait(handles.video.thread);
-    diary(handles.video.thread)
+%    diary(handles.video.thread)
     delete(handles.video.thread);
     handles.video.M=[];
     close(handles.video.hf);
