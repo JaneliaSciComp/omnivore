@@ -112,7 +112,7 @@ handles.video.trigger=[];
 handles.video.ncounters=0;
 handles.video.counter=1;
 handles.video.compression='Motion JPEG AVI';
-handles.video.pool=6;
+handles.video.pool=1;
 handles.running=0;
 handles.filename='';
 handles.timelimit=0;
@@ -582,6 +582,8 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
+    c=parcluster;
+    handles.video.pool=c.NumWorkers-1;
   end
   handles=configure_video_channels(handles);
 else
@@ -828,7 +830,7 @@ function video_thread(n,mfile,adaptor,deviceid,formatlist,formatvalue,ROI,...
 imaqmem(1e10);
 
 % continue/stop, video.n * (frames available, FPS achieved, FPS processed, most recent frame #)
-M{1} = memmapfile(mfile, 'Writable', true, 'Format', 'double');
+M{1} = memmapfile(mfile, 'Writable', true, 'Format', 'double', 'Repeat', 1);
 for i=1:n
   if(~save(i))  continue;  end
   M{1+i} = memmapfile(mfile, 'Writable', true, 'Format', 'double', 'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
@@ -841,7 +843,8 @@ for i=1:n
     set(vi{i},'FramesPerTrigger',1,'TriggerRepeat',inf);
     triggerconfig(vi{i}, 'hardware', 'fallingEdge', 'externalTriggerMode0-Source0');
   else
-    error('uhoh');
+    set(vi{i},'FramesPerTrigger',inf,'TriggerRepeat',1);
+    triggerconfig(vi{i}, 'immediate', 'none', 'none');
   end
 
   set(vi{i},'FrameGrabInterval',1);
@@ -868,6 +871,7 @@ while M{1}.Data(1)
   for i=1:n
     if(~save(i))  continue;  end
     M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
+    disp(M{1+i}.Data(1));
   end
 end
 
@@ -1029,7 +1033,7 @@ if(~handles.running)
     handles.video.ha = subplot('position',[0 0 1 1],'parent',handles.video.hf);
     colormap(handles.video.ha,gray(256));
     fid=fopen(handles.video.mfile,'w');  fwrite(fid,zeros(1,1+4*handles.video.n),'double');  fclose(fid);
-    handles.video.M{1} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double');
+    handles.video.M{1} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', 'Repeat', 1);
     for i=1:handles.video.n
       if(~handles.video.save(i))  continue;  end
       if(nsave==1)
@@ -1046,7 +1050,9 @@ if(~handles.running)
          handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
          handles.video.counter},...
         'matlabpool',handles.video.pool);
-    while handles.video.M{1}.Data(1)==0  pause(1);  disp('foo');  end
+    disp('waiting for batch job to start...');
+    while handles.video.M{1}.Data(1)==0  pause(1);  end
+    disp('batch job has started');
   end
 
   guidata(hObject, handles);
@@ -1104,6 +1110,7 @@ elseif(handles.running)
   if(handles.video.on && (sum(handles.video.save)>0))
     handles.video.M{1}.Data(1)=0;
     wait(handles.video.thread);
+    diary(handles.video.thread)
     delete(handles.video.thread);
     handles.video.M=[];
     close(handles.video.hf);
@@ -2080,15 +2087,15 @@ function VideoSave_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of VideoSave
 
-persistent directory
-if(isempty(directory))  directory=pwd;  end
+persistent directory2
+if(isempty(directory2))  directory2=pwd;  end
 
 handles=guidata(hObject);
 if(get(handles.VideoSave,'value'))
-  directory=uigetdir(directory,'Select video directory');
-  if(directory~=0)
+  directory2=uigetdir(directory2,'Select video directory');
+  if(directory2~=0)
     handles.video.save(handles.video.curr)=1;
-    handles.video.directory{handles.video.curr}=directory;
+    handles.video.directory{handles.video.curr}=directory2;
     set(handles.VideoDirectory,'string',handles.video.directory{handles.video.curr});
     set(handles.VideoDirectory,'enable','on');
   else
@@ -2165,7 +2172,7 @@ function VideoFPS_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of VideoFPS as a double
 
 handles.video.FPS=str2num(get(hObject,'String'));
-set(handles.video.trigger,'Frequency',handles.video.FPS);
+handles=configure_video_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
 
@@ -2198,6 +2205,7 @@ if(tmp>handles.video.maxn)
 end
 handles.video.n=tmp;
 handles.video.curr = min(handles.video.curr, handles.video.n);
+handles=configure_video_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
 
