@@ -1067,7 +1067,7 @@ if(~handles.running)
   nsave=sum(handles.video.save);
   if(handles.video.on && (nsave>0))
     handles.video.mfile = tempname;
-    handles.video.hf = figure('position',handles.video.ROI(handles.video.curr,:));
+    handles.video.hf = figure('menubar','none','position',handles.video.ROI(handles.video.curr,:));
     handles.video.ha = subplot('position',[0 0 1 1],'parent',handles.video.hf);
     colormap(handles.video.ha,gray(256));
     fid=fopen(handles.video.mfile,'w');  fwrite(fid,zeros(1,1+4*handles.video.n),'double');  fclose(fid);
