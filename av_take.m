@@ -193,7 +193,7 @@ handles.timelimit=handles_saved.timelimit;
 % ---
 function update_figure(handles)
 
-set(handles.AnalogOutOnOff,'value',handles.analog.out.on);
+set(handles.AnalogOutOnOff,'value',handles.analog.out.on,'enable','on');
 if(handles.analog.out.on && (handles.analog.out.maxn>0))
   set(handles.AnalogOutNumChannels,'string',handles.analog.out.n);
   set(handles.AnalogOutChannel,'string',[1:handles.analog.out.n]);
@@ -238,7 +238,7 @@ else
   set(handles.AnalogOutYScale,'enable','off');
 end
 
-set(handles.AnalogInOnOff,'value',handles.analog.in.on);
+set(handles.AnalogInOnOff,'value',handles.analog.in.on,'enable','on');
 if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInNumChannels,'string',handles.analog.in.n);
   set(handles.AnalogInChannel,'string',[1:handles.analog.in.n]);
@@ -283,7 +283,7 @@ else
   set(handles.AnalogInYScale,'enable','off');
 end
 
-set(handles.HygrometerOnOff,'value',handles.hygrometer.on);
+set(handles.HygrometerOnOff,'value',handles.hygrometer.on,'enable','on');
 if(handles.hygrometer.on)
   set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
   set(handles.HygrometerPeriod,'string',num2str(handles.hygrometer.period));
@@ -301,7 +301,7 @@ else
   set(handles.HygrometerPeriod,'enable','off');
 end
 
-set(handles.VideoOnOff,'value',handles.video.on);
+set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
@@ -323,6 +323,7 @@ if(handles.video.on && (handles.video.maxn>0))
   end
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
+  set(handles.VideoROI,'enable','on');
   set(handles.VideoNumChannels,'enable','on');
   set(handles.VideoChannel,'enable','on');
   set(handles.VideoPreview,'enable','on');
@@ -330,6 +331,7 @@ if(handles.video.on && (handles.video.maxn>0))
 else
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFPS,'enable','off');
+  set(handles.VideoROI,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoChannel,'enable','off');
   set(handles.VideoPreview,'enable','off');
@@ -1180,26 +1182,7 @@ elseif(handles.running)
   handles.analog.session.IsContinuous=false;
 
   set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
-  set(handles.AnalogOutOnOff,'enable','on');
-  set(handles.AnalogOutPlay,'enable','on');
-  set(handles.AnalogOutNumChannels,'enable','on');
-  set(handles.AnalogOutRange,'enable','on');
-  set(handles.AnalogInOnOff,'enable','on');
-  set(handles.AnalogInRecord,'enable','on');
-  set(handles.AnalogInNumChannels,'enable','on');
-  set(handles.AnalogInFs,'enable','on');
-  set(handles.AnalogInRange,'enable','on');
-  set(handles.AnalogInTerminalConfiguration,'enable','on');
-  set(handles.HygrometerOnOff,'enable','on');
-  set(handles.HygrometerSave,'enable','on');
-  set(handles.HygrometerPeriod,'enable','on');
-  set(handles.VideoOnOff,'enable','on');
-  set(handles.VideoSave,'enable','on');
-  set(handles.VideoFormat,'enable','on');
-  set(handles.VideoROI,'enable','on');
-  set(handles.VideoFPS,'enable','on');
-  set(handles.VideoNumChannels,'enable','on');
-  set(handles.VideoPreview,'enable','on');
+  update_figure(handles);
 
   handles.running=0;
 end
