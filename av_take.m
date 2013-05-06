@@ -584,8 +584,10 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
-    c=parcluster;
-    handles.video.pool=c.NumWorkers-1;
+    if(exist('matlabpool')==2)
+      c=parcluster;
+      handles.video.pool=c.NumWorkers-1;
+    end
   end
   handles=configure_video_channels(handles);
 else
@@ -877,7 +879,7 @@ while M{1}.Data(1)
   for i=1:n
     if(~save(i))  continue;  end
     M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
-    disp(M{1+i}.Data(1));
+    %disp(M{1+i}.Data(1));
   end
 end
 
@@ -1082,15 +1084,24 @@ if(~handles.running)
       handles.video.M{1+i} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', ...
           'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
     end
-    handles.video.thread=batch(@video_thread,0,...
-        {handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
-         handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
-         handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
-         handles.video.counter},...
-        'matlabpool',handles.video.pool);
-    disp('waiting for batch job to start...');
-    while handles.video.M{1}.Data(1)==0  pause(1);  end
-    disp('batch job has started');
+    if(exist('matlabpool')==2)
+      handles.video.thread=batch(@video_thread,0,...
+          {handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
+           handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
+           handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
+           handles.video.counter},...
+          'matlabpool',handles.video.pool);
+      disp('waiting for batch job to start...');
+      while handles.video.M{1}.Data(1)==0  pause(1);  end
+      disp('batch job has started');
+    else
+      video_thread(...
+          handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
+          handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
+          handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
+          handles.video.counter);
+      while handles.video.M{1}.Data(1)==0  pause(1);  end
+    end
   end
 
   guidata(hObject, handles);
@@ -1148,9 +1159,11 @@ elseif(handles.running)
   if(handles.video.on && (sum(handles.video.save)>0))
     handles.video.M{1}.Data(1)=0;
     while(sum(cellfun(@(x) x.Data(1),handles.video.M(2:end)))>0)  pause(1);  end
-    wait(handles.video.thread);
-%    diary(handles.video.thread)
-    delete(handles.video.thread);
+    if(exist('matlabpool')==2)
+      wait(handles.video.thread);
+  %    diary(handles.video.thread)
+      delete(handles.video.thread);
+    end
     handles.video.M=[];
     close(handles.video.hf);
     delete(handles.video.mfile);   % throws error b/c M is not released
