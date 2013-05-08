@@ -69,17 +69,24 @@ handles.analog.in.style=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
 handles.digital.in.on=0;
+handles.digital.in.curr=nan;
+handles.digital.in.record=0;
 handles.digital.in.directory='';
-handles.digital.in.clock.port=nan;
-handles.digital.in.clock.terminal=nan;
-handles.digital.in.data.port=nan;
-handles.digital.in.data.terminals=nan;
-handles.digital.in.channel.port=nan;
-handles.digital.in.channel.terminals=nan;
-handles.digital.in.error.port=nan;
-handles.digital.in.error.terminals=nan;
-handles.digital.in.sync.port=nan;
-handles.digital.in.sync.terminals=nan;
+handles.digital.in.clock.string='';
+handles.digital.in.clock.port=[];
+handles.digital.in.clock.terminal=[];
+handles.digital.in.data.string='';
+handles.digital.in.data.port=[];
+handles.digital.in.data.terminal=[];
+handles.digital.in.address.string='';
+handles.digital.in.address.port=[];
+handles.digital.in.address.terminal=[];
+handles.digital.in.error.string='';
+handles.digital.in.error.port=[];
+handles.digital.in.error.terminal=[];
+handles.digital.in.sync.string='';
+handles.digital.in.sync.port=[];
+handles.digital.in.sync.terminal=[];
 handles.hygrometer.on=0;
 handles.hygrometer.save=0;
 handles.hygrometer.directory='';
@@ -145,17 +152,24 @@ handles.analog.in.style=handles_saved.analog.in.style;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
 handles.digital.in.on=handles_saved.digital.in.on;
+handles.digital.in.curr=handles_saved.digital.in.curr;
+handles.digital.in.record=handles_saved.digital.in.record;
 handles.digital.in.directory=handles_saved.digital.in.directory;
+handles.digital.in.clock.string=handles_saved.digital.in.clock.string;
 handles.digital.in.clock.port=handles_saved.digital.in.clock.port;
 handles.digital.in.clock.terminal=handles_saved.digital.in.clock.terminal;
+handles.digital.in.data.string=handles_saved.digital.in.data.string;
 handles.digital.in.data.port=handles_saved.digital.in.data.port;
-handles.digital.in.data.terminals=handles_saved.digital.in.data.terminals;
-handles.digital.in.channel.port=handles_saved.digital.in.channel.port;
-handles.digital.in.channel.terminals=handles_saved.digital.in.channel.terminals;
+handles.digital.in.data.terminal=handles_saved.digital.in.data.terminal;
+handles.digital.in.address.string=handles_saved.digital.in.address.string;
+handles.digital.in.address.port=handles_saved.digital.in.address.port;
+handles.digital.in.address.terminal=handles_saved.digital.in.address.terminal;
+handles.digital.in.error.string=handles_saved.digital.in.error.string;
 handles.digital.in.error.port=handles_saved.digital.in.error.port;
-handles.digital.in.error.terminals=handles_saved.digital.in.error.terminals;
+handles.digital.in.error.terminal=handles_saved.digital.in.error.terminal;
+handles.digital.in.sync.string=handles_saved.digital.in.sync.string;
 handles.digital.in.sync.port=handles_saved.digital.in.sync.port;
-handles.digital.in.sync.terminals=handles_saved.digital.in.sync.terminals;
+handles.digital.in.sync.terminal=handles_saved.digital.in.sync.terminal;
 handles.hygrometer.on=handles_saved.hygrometer.on;
 handles.hygrometer.save=handles_saved.hygrometer.save;
 handles.hygrometer.directory=handles_saved.hygrometer.directory;
@@ -283,6 +297,46 @@ else
   set(handles.AnalogInYScale,'enable','off');
 end
 
+set(handles.DigitalInOnOff,'value',handles.digital.in.on,'enable','on');
+if(handles.digital.in.on)
+  set(handles.DigitalInChannel,'string',[1:2^length(handles.digital.in.address.terminal)]);
+  set(handles.DigitalInChannel,'value',handles.digital.in.curr);
+  set(handles.DigitalInDirectory,'string',handles.digital.in.directory);
+  if(handles.digital.in.record)
+    set(handles.DigitalInDirectory,'enable','on');
+    set(handles.DigitalInRecord,'value',1);
+  else
+    set(handles.DigitalInDirectory,'enable','off');
+    set(handles.DigitalInRecord,'value',0);
+  end
+  set(handles.DigitalInClock,'string',handles.digital.in.clock.string);
+  set(handles.DigitalInData,'string',handles.digital.in.data.string);
+  set(handles.DigitalInAddress,'string',handles.digital.in.address.string);
+  set(handles.DigitalInError,'string',handles.digital.in.error.string);
+  set(handles.DigitalInSync,'string',handles.digital.in.sync.string);
+  set(handles.DigitalInRecord,'enable','on');
+  set(handles.DigitalInDirectory,'enable','on');
+  set(handles.DigitalInXScale,'enable','on');
+  set(handles.DigitalInYScale,'enable','on');
+  set(handles.DigitalInChannel,'enable','on');
+  set(handles.DigitalInClock,'enable','on');
+  set(handles.DigitalInData,'enable','on');
+  set(handles.DigitalInAddress,'enable','on');
+  set(handles.DigitalInError,'enable','on');
+  set(handles.DigitalInSync,'enable','on');
+else
+  set(handles.DigitalInRecord,'enable','off');
+  set(handles.DigitalInDirectory,'enable','off');
+  set(handles.DigitalInXScale,'enable','off');
+  set(handles.DigitalInYScale,'enable','off');
+  set(handles.DigitalInChannel,'enable','off');
+  set(handles.DigitalInClock,'enable','off');
+  set(handles.DigitalInData,'enable','off');
+  set(handles.DigitalInAddress,'enable','off');
+  set(handles.DigitalInError,'enable','off');
+  set(handles.DigitalInSync,'enable','off');
+end
+
 set(handles.HygrometerOnOff,'value',handles.hygrometer.on,'enable','on');
 if(handles.hygrometer.on)
   set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
@@ -389,7 +443,7 @@ function handles=configure_digital_input_channels(handles)
 
 i=1;
 while i<=length(handles.digital.session.Channels)
-  if strcmp(class(handles.digital.session.Channels(i)),'daq.ni.DigitalInputVoltageChannel')
+  if strcmp(class(handles.digital.session.Channels(i)),'daq.ni.DigitalInputChannel')
     handles.digital.session.removeChannel(i);
   else
     i=i+1;
@@ -397,41 +451,43 @@ while i<=length(handles.digital.session.Channels)
 end
 
 if(handles.digital.in.on)
-  if((~isnan(handles.digital.in.clock.port)) && (~isnan(handles.digital.in.clock.terminal)))
-    [~,handles.digital.in.clock.idx]=...
-        handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-        ['port' num2str(handles.digital.in.clock.port) '/line' num2str(handles.digital.in.clock.terminal)],...
-        'InputOnly');
-  end
-  if((~isnan(handles.digital.in.data.port)) && (~isnan(handles.digital.in.data.terminal)))
+  if(~isempty(handles.digital.in.data.port))
     for i=1:length(handles.digital.in.data.port)
       [~,handles.digital.in.data.idx(i)]=...
           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.data.port) '/line' num2str(handles.digital.in.data.terminal)],...
+          ['port' num2str(handles.digital.in.data.port(i)) '/line' num2str(handles.digital.in.data.terminal(i))],...
           'InputOnly');
     end
   end
-  if((~isnan(handles.digital.in.channel.port)) && (~isnan(handles.digital.in.channel.terminal)))
-    for i=1:length(handles.digital.in.channel.port)
-      [~,handles.digital.in.channel.idx(i)]=...
+  if(~isempty(handles.digital.in.address.port))
+    for i=1:length(handles.digital.in.address.port)
+      [~,handles.digital.in.address.idx(i)]=...
           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.channel.port) '/line' num2str(handles.digital.in.channel.terminal)],...
+          ['port' num2str(handles.digital.in.address.port(i)) '/line' num2str(handles.digital.in.address.terminal(i))],...
           'InputOnly');
     end
   end
-  if((~isnan(handles.digital.in.error.port)) && (~isnan(handles.digital.in.error.terminal)))
+  if(~isempty(handles.digital.in.error.port))
     for i=1:length(handles.digital.in.error.port)
       [~,handles.digital.in.error.idx(i)]=...
           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.error.port) '/line' num2str(handles.digital.in.error.terminal)],...
+          ['port' num2str(handles.digital.in.error.port(i)) '/line' num2str(handles.digital.in.error.terminal(i))],...
           'InputOnly');
     end
   end
-  if((~isnan(handles.digital.in.sync.port)) && (~isnan(handles.digital.in.sync.terminal)))
-    [~,handles.digital.in.sync.idx(i)]=...
+  if(~isempty(handles.digital.in.sync.port))
+    [~,handles.digital.in.sync.idx]=...
         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
         ['port' num2str(handles.digital.in.sync.port) '/line' num2str(handles.digital.in.sync.terminal)],...
         'InputOnly');
+  end
+  if((~isempty(handles.digital.in.clock.port)) && (length(handles.digital.session.Channels)>0))
+%     [~,handles.digital.in.clock.idx]=...
+%         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
+%         ['port' num2str(handles.digital.in.clock.port) '/line' num2str(handles.digital.in.clock.terminal)],...
+%         'InputOnly');
+    handles.digital.session.addClockConnection('External','PXI1Slot3/PFI7','ScanClock');
+%    handles.digital.session.Rate=40e3;
   end
 end
 
@@ -513,6 +569,7 @@ end
 
 if(isfield(handles,'daqdevices'))
   handles.analog.session=daq.createSession('ni');
+  handles.analog.session.IsContinuous=true;
 
   idx=find(cellfun(@(x) strcmp(x,'AnalogOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
   handles.analog.out.ranges_available=handles.daqdevices.Subsystems(idx).RangesAvailable;
@@ -542,6 +599,8 @@ if(isfield(handles,'daqdevices'))
   handles=configure_analog_input_channels(handles);
 
   handles.digital.session=daq.createSession('ni');
+  handles.digital.session.IsContinuous=true;
+  handles.digital.session.NotifyWhenDataAvailableExceeds=10000;
   handles=configure_digital_input_channels(handles);
 
   handles.hygrometer.period=max(handles.hygrometer.period,10);
@@ -745,7 +804,7 @@ persistent last_timestamp
 handles=guidata(hObject);
 
 if(handles.digital.in.record)
-  tmp=evt.Data(:,[handles.digital.in.data.idx handles.digital.in.channel.idx ...
+  tmp=evt.Data(:,[handles.digital.in.data.idx handles.digital.in.address.idx ...
         handles.digital.in.error.idx handles.digital.in.sync.idx]);
   tmp=uint16(binaryVectorToDecimal(tmp));
   fwrite(handles.digital.in.fid,tmp,'uint16');
@@ -759,17 +818,21 @@ end
 %end
 %last_timestamp=evt.TimeStamps(end);
 
-binaryVectorToDecimal(evt.Data(:,[handles.digital.in.channel.idx]));
-find(ans==handles.digital.in.curr);
+binaryVectorToDecimal(evt.Data(:,[handles.digital.in.address.idx]));
+find(ans==(handles.digital.in.curr-1));
 binaryVectorToDecimal(evt.Data(ans,[handles.digital.in.data.idx]));
 plot(handles.DigitalInPlot,ans,'k-');
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
-handles.digital.in.error1=handles.digital.in.error1+sum(evt.Data(:,handles.digital.in.error.idx(1)));
-set(handles.DigitalInError1,'string',num2str(handles.digital.in.error1));
-handles.digital.in.error2=handles.digital.in.error2+sum(evt.Data(:,handles.digital.in.error.idx(2)));
-set(handles.DigitalInError2,'string',num2str(handles.digital.in.error2));
+if(~strcmp(handles.digital.in.error.string,''))
+  handles.digital.in.error1=handles.digital.in.error1+sum(evt.Data(:,handles.digital.in.error.idx(1)));
+  set(handles.DigitalInError1,'string',num2str(handles.digital.in.error1));
+  handles.digital.in.error2=handles.digital.in.error2+sum(evt.Data(:,handles.digital.in.error.idx(2)));
+  set(handles.DigitalInError2,'string',num2str(handles.digital.in.error2));
+end
+
+drawnow('expose')
 
 
 % ---
@@ -1019,8 +1082,6 @@ if(~handles.running)
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoPreview,'enable','off');
 
-  handles.analog.session.IsContinuous=true;
-
   if(handles.analog.out.on)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
     guidata(hObject, handles);
@@ -1128,7 +1189,12 @@ if(~handles.running)
 %   end
 
 elseif(handles.running)
-  handles.analog.session.stop();
+  if(handles.digital.in.on)
+    handles.digital.session.stop();
+  end
+  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+    handles.analog.session.stop();
+  end
 
   if(handles.analog.out.on)
     delete(handles.listenerAnalogOut);
@@ -1191,8 +1257,6 @@ elseif(handles.running)
 %     stop(handles.timer.auto_turn_off);
 %     delete(handles.timer.auto_turn_off);
 %   end
-
-  handles.analog.session.IsContinuous=false;
 
   set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
   update_figure(handles);
@@ -1887,9 +1951,10 @@ function DigitalInClock_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of DigitalInClock as text
 %        str2double(get(hObject,'String')) returns contents of DigitalInClock as a double
 
-tmp=sscanf(get(hObject,'String'),'%d.%d');
-handles.digital.clock.port=tmp(1);
-handles.digital.clock.terminal=tmp(2);
+handles.digital.in.clock.string=get(hObject,'String');
+tmp=sscanf(handles.digital.in.clock.string,'%d.%d');
+handles.digital.in.clock.port=tmp(1);
+handles.digital.in.clock.terminal=tmp(2);
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
@@ -1917,9 +1982,13 @@ function DigitalInData_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of DigitalInData as text
 %        str2double(get(hObject,'String')) returns contents of DigitalInData as a double
 
-tmp=sscanf(get(hObject,'String'),'%d.%d-%d');
-handles.digital.data.terminals=tmp(2):tmp(3);
-handles.digital.data.port=repmat(tmp(1),1,length(handles.digital.data.terminals));;
+handles.digital.in.data.string=get(hObject,'String');
+%tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d,%d.%d-%d');
+%handles.digital.in.data.terminal=[tmp(2):tmp(3) tmp(5):tmp(6)];
+%handles.digital.in.data.port=[repmat(tmp(1),1,tmp(3)-tmp(2)+1) repmat(tmp(4),1,tmp(6)-tmp(5)+1)];
+tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d');
+handles.digital.in.data.terminal=tmp(2):tmp(3);
+handles.digital.in.data.port=repmat(tmp(1),1,length(handles.digital.in.data.terminal));
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
@@ -1947,9 +2016,11 @@ function DigitalInAddress_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of DigitalInAddress as text
 %        str2double(get(hObject,'String')) returns contents of DigitalInAddress as a double
 
-tmp=sscanf(get(hObject,'String'),'%d.%d-%d');
-handles.digital.address.terminals=tmp(2):tmp(3);
-handles.digital.address.port=repmat(tmp(1),1,length(handles.digital.address.terminals));;
+handles.digital.in.address.string=get(hObject,'String');
+tmp=sscanf(handles.digital.in.address.string,'%d.%d-%d');
+handles.digital.in.address.terminal=tmp(2):tmp(3);
+handles.digital.in.address.port=repmat(tmp(1),1,length(handles.digital.in.address.terminal));
+handles.digital.in.curr=max(handles.digital.in.curr,2^length(handles.digital.in.address.terminal));
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
@@ -1977,9 +2048,10 @@ function DigitalInError_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of DigitalInError as text
 %        str2double(get(hObject,'String')) returns contents of DigitalInError as a double
 
-tmp=sscanf(get(hObject,'String'),'%d.%d-%d');
-handles.digital.error.terminals=tmp(2):tmp(3);
-handles.digital.error.port=repmat(tmp(1),1,length(handles.digital.error.terminals));;
+handles.digital.in.error.string=get(hObject,'String');
+tmp=sscanf(handles.digital.in.error.string,'%d.%d-%d');
+handles.digital.in.error.terminal=tmp(2):tmp(3);
+handles.digital.in.error.port=repmat(tmp(1),1,length(handles.digital.in.error.terminal));
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
@@ -2007,9 +2079,10 @@ function DigitalInSync_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of DigitalInSync as text
 %        str2double(get(hObject,'String')) returns contents of DigitalInSync as a double
 
-tmp=sscanf(get(hObject,'String'),'%d.%d');
-handles.digital.sync.port=tmp(1);
-handles.digital.sync.terminal=tmp(2);
+handles.digital.in.sync.string=get(hObject,'String');
+tmp=sscanf(handles.digital.in.sync.string,'%d.%d');
+handles.digital.in.sync.port=tmp(1);
+handles.digital.in.sync.terminal=tmp(2);
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
