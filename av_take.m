@@ -123,6 +123,7 @@ handles.video.pool=1;
 handles.running=0;
 handles.filename='';
 handles.timelimit=0;
+handles.verbose=true;
 
 
 % ---
@@ -202,6 +203,7 @@ handles.video.pool=handles_saved.video.pool;
 handles.running=0;
 handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
+handles.verbose=handles_saved.verbose;
 
 
 % ---
@@ -601,6 +603,7 @@ if(isfield(handles,'daqdevices'))
   handles.digital.session=daq.createSession('ni');
   handles.digital.session.IsContinuous=true;
   handles.digital.session.NotifyWhenDataAvailableExceeds=10000;
+  %handles.digital.session.Rate=125000;
   handles=configure_digital_input_channels(handles);
 
   handles.hygrometer.period=max(handles.hygrometer.period,10);
@@ -740,6 +743,11 @@ function analog_out_callback(src,evt,hObject)
 
 handles=guidata(hObject);
 
+if handles.verbose
+  disp('entering analog_out_callback');
+  tic
+end
+
 for i=1:handles.analog.out.n
   if(handles.analog.out.play(i))
     tmp=handles.analog.out.idx(i)+handles.analog.out.fs(i)-1;
@@ -771,6 +779,10 @@ handles.analog.session.queueOutputData(out);
 
 guidata(hObject, handles);
 
+if handles.verbose
+  disp(['exiting  analog_out_callback: ' num2str(toc) 's']);
+end
+
 
 % --- 
 function analog_in_callback(src,evt,hObject)
@@ -778,6 +790,11 @@ function analog_in_callback(src,evt,hObject)
 persistent last_timestamp
 
 handles=guidata(hObject);
+
+if handles.verbose
+  disp('entering analog_in_callback');
+  tic
+end
 
 if(handles.analog.in.record)
   fwrite(handles.analog.in.fid,evt.Data,'double');
@@ -795,6 +812,10 @@ plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
+if handles.verbose
+  disp(['exiting  analog_in_callback:  ' num2str(toc) 's']);
+end
+
 
 % --- 
 function digital_in_callback(src,evt,hObject)
@@ -802,6 +823,11 @@ function digital_in_callback(src,evt,hObject)
 persistent last_timestamp
 
 handles=guidata(hObject);
+
+if handles.verbose
+  disp('entering digital_in_callback');
+  tic
+end
 
 if(handles.digital.in.record)
   tmp=evt.Data(:,[handles.digital.in.data.idx handles.digital.in.address.idx ...
@@ -818,10 +844,19 @@ end
 %end
 %last_timestamp=evt.TimeStamps(end);
 
-binaryVectorToDecimal(evt.Data(:,[handles.digital.in.address.idx]));
-find(ans==(handles.digital.in.curr-1));
-binaryVectorToDecimal(evt.Data(ans,[handles.digital.in.data.idx]));
-plot(handles.DigitalInPlot,ans,'k-');
+if(false)
+  channel=binaryVectorToDecimal(evt.Data(:,fliplr(handles.digital.in.address.idx)));
+  if(handles.digital.in.curr<4)
+    idx=find(channel==(handles.digital.in.curr-1));
+  else
+    idx=find((channel(1:end-1)==3) & (channel(2:end)==3));
+  end
+  binaryVectorToDecimal(evt.Data(idx,handles.digital.in.data.idx));
+  plot(handles.DigitalInPlot,ans,'k-');
+end
+
+%set(handles.DigitalInFs,'string',num2str((length(idx)-1)/(evt.TimeStamps(idx(end))-evt.TimeStamps(idx(1)))));
+
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
@@ -833,6 +868,10 @@ if(~strcmp(handles.digital.in.error.string,''))
 end
 
 drawnow('expose')
+
+if handles.verbose
+  disp(['exiting  digital_in_callback: ' num2str(toc) 's']);
+end
 
 
 % ---
@@ -968,6 +1007,11 @@ M=[];
 % ---
 function display_callback(src,evt,handles)
 
+if handles.verbose
+  disp('entering display_callback');
+  tic
+end
+
 if(isfield(handles,'triggertime'))
   str='';
   tmp=etime(clock,handles.triggertime);
@@ -1015,6 +1059,10 @@ end
 
 drawnow('expose')
 
+if handles.verbose
+  disp(['exiting  display_callback:    ' num2str(toc) 's']);
+end
+
 
 % --- Executes on button press in StartStop.
 function StartStop_Callback(hObject, eventdata, handles)
@@ -1022,13 +1070,13 @@ function StartStop_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(handles.StartStop,'enable','off');  drawnow;
+set(handles.StartStop,'enable','off');  drawnow('expose');
 
 if(~handles.running)
   if(sum(handles.analog.out.play)>0)
     if(sum(diff([handles.analog.out.fs(logical([handles.analog.out.play]))]))>0)
       uiwait(errordlg('analog output sampling rates must be equal'));
-      set(handles.StartStop,'enable','on');  drawnow;
+      set(handles.StartStop,'enable','on');  drawnow('expose');
       return;
     end
   end
@@ -1036,7 +1084,7 @@ if(~handles.running)
     find([handles.analog.out.play],1,'first');
     if(handles.analog.out.fs(ans) ~= handles.analog.in.fs)
       uiwait(warndlg('analog input and output sampling rate must be equal'));
-      set(handles.StartStop,'enable','on');  drawnow;
+      set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
     end
   end
@@ -1053,7 +1101,7 @@ if(~handles.running)
   
   if(isnan(rate) || isempty(rate) || (rate<1))
     uiwait(errordlg('sampling rate must be a positive integer'));
-    set(handles.StartStop,'enable','on');  drawnow;
+    set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
   else
     handles.analog.session.Rate=rate;
@@ -1071,6 +1119,13 @@ if(~handles.running)
   set(handles.AnalogInFs,'enable','off');
   set(handles.AnalogInRange,'enable','off');
   set(handles.AnalogInTerminalConfiguration,'enable','off');
+  set(handles.DigitalInOnOff,'enable','off');
+  set(handles.DigitalInRecord,'enable','off');
+  set(handles.DigitalInClock,'enable','off');
+  set(handles.DigitalInData,'enable','off');
+  set(handles.DigitalInAddress,'enable','off');
+  set(handles.DigitalInError,'enable','off');
+  set(handles.DigitalInSync,'enable','off');
   set(handles.HygrometerOnOff,'enable','off');
   set(handles.HygrometerSave,'enable','off');
   set(handles.HygrometerPeriod,'enable','off');
@@ -1081,7 +1136,8 @@ if(~handles.running)
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoPreview,'enable','off');
-
+  drawnow('expose');
+  
   if(handles.analog.out.on)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
     guidata(hObject, handles);
@@ -1266,7 +1322,7 @@ end
 
 guidata(hObject, handles);
 
-set(handles.StartStop,'enable','on');  %drawnow;
+set(handles.StartStop,'enable','on');  drawnow('expose');
 
 
 function TimeLimit_Callback(hObject, eventdata, handles)
