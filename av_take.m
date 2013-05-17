@@ -78,9 +78,6 @@ handles.digital.in.clock.terminal=[];
 handles.digital.in.data.string='';
 handles.digital.in.data.port=[];
 handles.digital.in.data.terminal=[];
-handles.digital.in.address.string='';
-handles.digital.in.address.port=[];
-handles.digital.in.address.terminal=[];
 handles.digital.in.error.string='';
 handles.digital.in.error.port=[];
 handles.digital.in.error.terminal=[];
@@ -162,9 +159,6 @@ handles.digital.in.clock.terminal=handles_saved.digital.in.clock.terminal;
 handles.digital.in.data.string=handles_saved.digital.in.data.string;
 handles.digital.in.data.port=handles_saved.digital.in.data.port;
 handles.digital.in.data.terminal=handles_saved.digital.in.data.terminal;
-handles.digital.in.address.string=handles_saved.digital.in.address.string;
-handles.digital.in.address.port=handles_saved.digital.in.address.port;
-handles.digital.in.address.terminal=handles_saved.digital.in.address.terminal;
 handles.digital.in.error.string=handles_saved.digital.in.error.string;
 handles.digital.in.error.port=handles_saved.digital.in.error.port;
 handles.digital.in.error.terminal=handles_saved.digital.in.error.terminal;
@@ -231,8 +225,6 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
   set(handles.AnalogOutNumChannels,'enable','on');
   set(handles.AnalogOutChannel,'enable','on');
   set(handles.AnalogOutStyle,'enable','on');
-  set(handles.AnalogOutSpectrum,'enable','on');
-  set(handles.AnalogOutEqualizer,'enable','on');
   set(handles.AnalogOutXScale,'enable','on');
   set(handles.AnalogOutYScale,'enable','on');
 else
@@ -241,8 +233,6 @@ else
   set(handles.AnalogOutNumChannels,'enable','off');
   set(handles.AnalogOutChannel,'enable','off');
   set(handles.AnalogOutStyle,'enable','off');
-  set(handles.AnalogOutSpectrum,'enable','off');
-  set(handles.AnalogOutEqualizer,'enable','off');
   set(handles.AnalogOutXScale,'enable','off');
   set(handles.AnalogOutYScale,'enable','off');
 end
@@ -269,8 +259,6 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInNumChannels,'enable','on');
   set(handles.AnalogInChannel,'enable','on');
   set(handles.AnalogInStyle,'enable','on');
-  set(handles.AnalogInSpectrum,'enable','on');
-  set(handles.AnalogInEqualizer,'enable','on');
   set(handles.AnalogInXScale,'enable','on');
   set(handles.AnalogInYScale,'enable','on');
 else
@@ -279,15 +267,13 @@ else
   set(handles.AnalogInNumChannels,'enable','off');
   set(handles.AnalogInChannel,'enable','off');
   set(handles.AnalogInStyle,'enable','off');
-  set(handles.AnalogInSpectrum,'enable','off');
-  set(handles.AnalogInEqualizer,'enable','off');
   set(handles.AnalogInXScale,'enable','off');
   set(handles.AnalogInYScale,'enable','off');
 end
 
 set(handles.DigitalInOnOff,'value',handles.digital.in.on,'enable','on');
 if(handles.digital.in.on)
-  set(handles.DigitalInChannel,'string',[1:2^length(handles.digital.in.address.terminal)]);
+  set(handles.DigitalInChannel,'string',[1:4]);
   set(handles.DigitalInChannel,'value',handles.digital.in.curr);
   set(handles.DigitalInDirectory,'string',handles.digital.in.directory);
   if(handles.digital.in.record)
@@ -436,36 +422,37 @@ while i<=length(handles.digital.session.Channels)
 end
 
 if(handles.digital.in.on)
-  if(~isempty(handles.digital.in.data.port))
-    for i=1:length(handles.digital.in.data.port)
-      [~,handles.digital.in.data.idx(i)]=...
-          handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.data.port(i)) '/line' num2str(handles.digital.in.data.terminal(i))],...
-          'InputOnly');
-    end
-  end
-  if(~isempty(handles.digital.in.address.port))
-    for i=1:length(handles.digital.in.address.port)
-      [~,handles.digital.in.address.idx(i)]=...
-          handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.address.port(i)) '/line' num2str(handles.digital.in.address.terminal(i))],...
-          'InputOnly');
-    end
-  end
-  if(~isempty(handles.digital.in.error.port))
-    for i=1:length(handles.digital.in.error.port)
-      [~,handles.digital.in.error.idx(i)]=...
-          handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-          ['port' num2str(handles.digital.in.error.port(i)) '/line' num2str(handles.digital.in.error.terminal(i))],...
-          'InputOnly');
-    end
-  end
-  if(~isempty(handles.digital.in.sync.port))
-    [~,handles.digital.in.sync.idx]=...
-        handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-        ['port' num2str(handles.digital.in.sync.port) '/line' num2str(handles.digital.in.sync.terminal)],...
-        'InputOnly');
-  end
+  handles.digital.session.addDigitalChannel(handles.daqdevices.ID,'port0/line0:7','InputOnly');
+%   if(~isempty(handles.digital.in.data.port))
+%     for i=1:length(handles.digital.in.data.port)
+%       [~,handles.digital.in.data.idx(i)]=...
+%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
+%           ['port' num2str(handles.digital.in.data.port(i)) '/line' num2str(handles.digital.in.data.terminal(i))],...
+%           'InputOnly');
+%     end
+%   end
+%   if(~isempty(handles.digital.in.address.port))
+%     for i=1:length(handles.digital.in.address.port)
+%       [~,handles.digital.in.address.idx(i)]=...
+%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
+%           ['port' num2str(handles.digital.in.address.port(i)) '/line' num2str(handles.digital.in.address.terminal(i))],...
+%           'InputOnly');
+%     end
+%   end
+%   if(~isempty(handles.digital.in.error.port))
+%     for i=1:length(handles.digital.in.error.port)
+%       [~,handles.digital.in.error.idx(i)]=...
+%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
+%           ['port' num2str(handles.digital.in.error.port(i)) '/line' num2str(handles.digital.in.error.terminal(i))],...
+%           'InputOnly');
+%     end
+%   end
+%   if(~isempty(handles.digital.in.sync.port))
+%     [~,handles.digital.in.sync.idx]=...
+%         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
+%         ['port' num2str(handles.digital.in.sync.port) '/line' num2str(handles.digital.in.sync.terminal)],...
+%         'InputOnly');
+%   end
   if((~isempty(handles.digital.in.clock.port)) && (length(handles.digital.session.Channels)>0))
 %     [~,handles.digital.in.clock.idx]=...
 %         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
@@ -813,10 +800,8 @@ if handles.verbose
 end
 
 if(handles.digital.in.record)
-  tmp=evt.Data(:,[handles.digital.in.data.idx handles.digital.in.address.idx ...
-        handles.digital.in.error.idx handles.digital.in.sync.idx]);
-  tmp=uint16(binaryVectorToDecimal(tmp));
-  fwrite(handles.digital.in.fid,tmp,'uint16');
+  tmp=uint8(sum(bsxfun(@times,evt.Data,2.^(0:7)),2));
+  fwrite(handles.digital.in.fid,tmp,'uint8');
 end
 
 %if(~isempty(last_timestamp))
@@ -827,30 +812,33 @@ end
 %end
 %last_timestamp=evt.TimeStamps(end);
 
-if(false)
-  channel=binaryVectorToDecimal(evt.Data(:,fliplr(handles.digital.in.address.idx)));
-  if(handles.digital.in.curr<4)
-    idx=find(channel==(handles.digital.in.curr-1));
-  else
-    idx=find((channel(1:end-1)==3) & (channel(2:end)==3));
-  end
-  binaryVectorToDecimal(evt.Data(idx,handles.digital.in.data.idx));
-  plot(handles.DigitalInPlot,ans,'k-');
-end
+DataT=evt.Data';
+
+idx=find(evt.Data(:,handles.digital.in.clock.terminal+1));
+idx=idx-handles.digital.in.clock.port;
+idx=idx(1:(end-1));
+idx=idx+2*(handles.digital.in.curr-1);
+
+idx2=sub2ind(size(DataT),handles.digital.in.data.terminal+1,handles.digital.in.data.port+1);
+tmp=arrayfun(@(i) DataT(sub2ind(size(DataT),1,i)+idx2-1)',idx,'uniformoutput',false);
+sum(bsxfun(@times,[tmp{:}]',2.^(0:10)),2);
+plot(handles.DigitalInPlot,ans,'k-');
 
 %set(handles.DigitalInFs,'string',num2str((length(idx)-1)/(evt.TimeStamps(idx(end))-evt.TimeStamps(idx(1)))));
 
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
-if(~strcmp(handles.digital.in.error.string,''))
-  handles.digital.in.error1=handles.digital.in.error1+sum(evt.Data(:,handles.digital.in.error.idx(1)));
-  set(handles.DigitalInError1,'string',num2str(handles.digital.in.error1));
-  handles.digital.in.error2=handles.digital.in.error2+sum(evt.Data(:,handles.digital.in.error.idx(2)));
-  set(handles.DigitalInError2,'string',num2str(handles.digital.in.error2));
-end
+tmp1=sum(evt.Data((idx(1)+handles.digital.in.error.port(1)):2:end,...
+    handles.digital.in.error.terminal(1)+1));
+tmp2=sum(evt.Data((idx(1)+handles.digital.in.error.port(2)):2:end,...
+    handles.digital.in.error.terminal(2)+1));
+handles.digital.in.error1=handles.digital.in.error1+tmp1;
+set(handles.DigitalInError1,'string',num2str(handles.digital.in.error1));
+handles.digital.in.error2=handles.digital.in.error2+tmp2;
+set(handles.DigitalInError2,'string',num2str(handles.digital.in.error2));
 
-drawnow('expose')
+%drawnow('expose')
 
 if handles.verbose
   disp(['exiting  digital_in_callback: ' num2str(toc) 's']);
@@ -1029,10 +1017,10 @@ if(handles.video.on && (nsave>0) && ...
   set(handles.VideoFPSAchieved,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(2))));
   set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(3))));
   if(nsave>1)
-    imread(fullfile(handles.video.directory{handles.video.curr},handles.filename,...
+    imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
         num2str(handles.video.curr),[num2str(handles.video.M{1+handles.video.curr}.Data(4)) '.jpg']));
   else
-    imread(fullfile(handles.video.directory{handles.video.curr},handles.filename,...
+    imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
         [num2str(handles.video.M{1+handles.video.curr}.Data(4)) '.jpg']));
   end
   image(ans,'parent',handles.video.ha);
@@ -1134,7 +1122,7 @@ if(~handles.running)
     clear analog_in_callback
     handles.analog.in.fid = nan;
     if(handles.analog.in.record)
-      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename '.bin']),'w');
+      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
       % version#, sample rate, nchan
       fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
     end
@@ -1145,7 +1133,7 @@ if(~handles.running)
   if(handles.digital.in.on)
     handles.digital.in.fid = nan;
     if(handles.digital.in.record)
-      handles.digital.in.fid = fopen(fullfile(handles.digital.in.directory,[handles.filename '.bin']),'w');
+      handles.digital.in.fid = fopen(fullfile(handles.digital.in.directory,[handles.filename 'd.bin']),'w');
       %version#, sample rate, nchan
       %fwrite(handles.digital.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
     end
@@ -1176,9 +1164,9 @@ if(~handles.running)
     for i=1:handles.video.n
       if(~handles.video.save(i))  continue;  end
       if(nsave==1)
-        mkdir(fullfile(handles.video.directory{i},handles.filename));
+        mkdir(fullfile(handles.video.directory{i},[handles.filename 'v']));
       else
-        mkdir(fullfile(handles.video.directory{i},handles.filename,num2str(i)));
+        mkdir(fullfile(handles.video.directory{i},[handles.filename 'v'],num2str(i)));
       end
       handles.video.M{1+i} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', ...
           'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
@@ -1187,7 +1175,7 @@ if(~handles.running)
       handles.video.thread=batch(@video_thread,0,...
           {handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
            handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
-           handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
+           handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
            handles.video.counter},...
           'matlabpool',handles.video.pool);
       disp('waiting for batch job to start...');
@@ -1197,7 +1185,7 @@ if(~handles.running)
       video_thread(...
           handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
           handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
-          handles.video.save, handles.video.directory, handles.filename, handles.video.pool, ...
+          handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
           handles.video.counter);
       while handles.video.M{1}.Data(1)==0  pause(1);  end
     end
@@ -2007,12 +1995,9 @@ function DigitalInData_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of DigitalInData as a double
 
 handles.digital.in.data.string=get(hObject,'String');
-%tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d,%d.%d-%d');
-%handles.digital.in.data.terminal=[tmp(2):tmp(3) tmp(5):tmp(6)];
-%handles.digital.in.data.port=[repmat(tmp(1),1,tmp(3)-tmp(2)+1) repmat(tmp(4),1,tmp(6)-tmp(5)+1)];
-tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d');
-handles.digital.in.data.terminal=tmp(2):tmp(3);
-handles.digital.in.data.port=repmat(tmp(1),1,length(handles.digital.in.data.terminal));
+tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d,%d.%d-%d');
+handles.digital.in.data.terminal=[tmp(2):tmp(3) tmp(5):tmp(6)];
+handles.digital.in.data.port=[repmat(tmp(1),1,tmp(3)-tmp(2)+1) repmat(tmp(4),1,tmp(6)-tmp(5)+1)];
 handles=configure_digital_input_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
