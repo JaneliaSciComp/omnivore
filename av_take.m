@@ -571,7 +571,6 @@ end
 
 if(isfield(handles,'daqdevices'))
   handles.analog.session=daq.createSession('ni');
-  handles.analog.session.IsContinuous=true;
 
   idx=find(cellfun(@(x) strcmp(x,'AnalogOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
   handles.analog.out.ranges_available=handles.daqdevices.Subsystems(idx).RangesAvailable;
@@ -1227,6 +1226,7 @@ if(~handles.running)
     handles.digital.session.startBackground;
   end
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+    handles.analog.session.IsContinuous=true;
     handles.analog.session.startBackground;
   end
   handles.triggertime=clock;
@@ -1250,6 +1250,7 @@ elseif(handles.running)
   end
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     handles.analog.session.stop();
+    handles.analog.session.IsContinuous=false;
   end
 
   if(handles.analog.out.on)
