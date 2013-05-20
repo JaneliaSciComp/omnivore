@@ -225,19 +225,12 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
     set(handles.AnalogOutFile,'enable','off');
     set(handles.AnalogOutPlay,'value',0);
   end
-  switch(handles.analog.out.style)
-    case 1
-      set(handles.AnalogOutTimeSeries,'value',1);
-    case 2
-      set(handles.AnalogOutSpectrum,'value',1);
-    case 3
-      set(handles.AnalogOutEqualizer,'value',1);
-  end
+  set(handles.AnalogOutStyle,'value',handles.analog.out.style);
   set(handles.AnalogOutPlay,'enable','on');
   set(handles.AnalogOutFile,'enable','on');
   set(handles.AnalogOutNumChannels,'enable','on');
   set(handles.AnalogOutChannel,'enable','on');
-  set(handles.AnalogOutTimeSeries,'enable','on');
+  set(handles.AnalogOutStyle,'enable','on');
   set(handles.AnalogOutSpectrum,'enable','on');
   set(handles.AnalogOutEqualizer,'enable','on');
   set(handles.AnalogOutXScale,'enable','on');
@@ -247,7 +240,7 @@ else
   set(handles.AnalogOutFile,'enable','off');
   set(handles.AnalogOutNumChannels,'enable','off');
   set(handles.AnalogOutChannel,'enable','off');
-  set(handles.AnalogOutTimeSeries,'enable','off');
+  set(handles.AnalogOutStyle,'enable','off');
   set(handles.AnalogOutSpectrum,'enable','off');
   set(handles.AnalogOutEqualizer,'enable','off');
   set(handles.AnalogOutXScale,'enable','off');
@@ -270,19 +263,12 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
     set(handles.AnalogInDirectory,'enable','off');
     set(handles.AnalogInRecord,'value',0);
   end
-  switch(handles.analog.in.style)
-    case 1
-      set(handles.AnalogInTimeSeries,'value',1);
-    case 2
-      set(handles.AnalogInSpectrum,'value',1);
-    case 3
-      set(handles.AnalogInEqualizer,'value',1);
-  end
+  set(handles.AnalogInStyle,'value',handles.analog.in.style);
   set(handles.AnalogInRecord,'enable','on');
   set(handles.AnalogInDirectory,'enable','on');
   set(handles.AnalogInNumChannels,'enable','on');
   set(handles.AnalogInChannel,'enable','on');
-  set(handles.AnalogInTimeSeries,'enable','on');
+  set(handles.AnalogInStyle,'enable','on');
   set(handles.AnalogInSpectrum,'enable','on');
   set(handles.AnalogInEqualizer,'enable','on');
   set(handles.AnalogInXScale,'enable','on');
@@ -292,7 +278,7 @@ else
   set(handles.AnalogInDirectory,'enable','off');
   set(handles.AnalogInNumChannels,'enable','off');
   set(handles.AnalogInChannel,'enable','off');
-  set(handles.AnalogInTimeSeries,'enable','off');
+  set(handles.AnalogInStyle,'enable','off');
   set(handles.AnalogInSpectrum,'enable','off');
   set(handles.AnalogInEqualizer,'enable','off');
   set(handles.AnalogInXScale,'enable','off');
@@ -313,7 +299,6 @@ if(handles.digital.in.on)
   end
   set(handles.DigitalInClock,'string',handles.digital.in.clock.string);
   set(handles.DigitalInData,'string',handles.digital.in.data.string);
-  set(handles.DigitalInAddress,'string',handles.digital.in.address.string);
   set(handles.DigitalInError,'string',handles.digital.in.error.string);
   set(handles.DigitalInSync,'string',handles.digital.in.sync.string);
   set(handles.DigitalInRecord,'enable','on');
@@ -323,7 +308,6 @@ if(handles.digital.in.on)
   set(handles.DigitalInChannel,'enable','on');
   set(handles.DigitalInClock,'enable','on');
   set(handles.DigitalInData,'enable','on');
-  set(handles.DigitalInAddress,'enable','on');
   set(handles.DigitalInError,'enable','on');
   set(handles.DigitalInSync,'enable','on');
 else
@@ -334,7 +318,6 @@ else
   set(handles.DigitalInChannel,'enable','off');
   set(handles.DigitalInClock,'enable','off');
   set(handles.DigitalInData,'enable','off');
-  set(handles.DigitalInAddress,'enable','off');
   set(handles.DigitalInError,'enable','off');
   set(handles.DigitalInSync,'enable','off');
 end
@@ -1122,7 +1105,6 @@ if(~handles.running)
   set(handles.DigitalInRecord,'enable','off');
   set(handles.DigitalInClock,'enable','off');
   set(handles.DigitalInData,'enable','off');
-  set(handles.DigitalInAddress,'enable','off');
   set(handles.DigitalInError,'enable','off');
   set(handles.DigitalInSync,'enable','off');
   set(handles.HygrometerOnOff,'enable','off');
@@ -1427,7 +1409,7 @@ function AnalogOutChannel_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns AnalogOutChannel contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from AnalogOutChannel
 
-handles.analog.out.curr=get(handles.AnalogOutChannel,'value');
+handles.analog.out.curr=get(hObject,'value');
 update_figure(handles);
 guidata(hObject, handles);
 
@@ -1490,23 +1472,16 @@ end
 
 
 % --- Executes when selected object is changed in AnalogOutStyle.
-function AnalogOutStyle_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in AnalogOutStyle 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
+function AnalogOutStyle_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutStyle (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-switch hObject
-  case handles.AnalogOutTimeSeries
-    handles.analog.out.style=1;
-  case handles.AnalogOutSpectrum
-    handles.analog.out.style=2;
-  case handles.AnalogOutEqualizer
-    handles.analog.out.style=3;
-end
+% Hints: contents = cellstr(get(hObject,'String')) returns AnalogOutStyle contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from AnalogOutStyle
 
+handles.analog.out.style=get(hObject,'value');
+update_figure(handles);
 guidata(hObject, handles);
 
 
@@ -1681,23 +1656,16 @@ end
 
 
 % --- Executes when selected object is changed in AnalogInStyle.
-function AnalogInStyle_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in AnalogInStyle 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
+function AnalogInStyle_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInStyle (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-switch hObject
-  case handles.AnalogInTimeSeries
-    handles.analog.in.style=1;
-  case handles.AnalogInSpectrum
-    handles.analog.in.style=2;
-  case handles.AnalogInEqualizer
-    handles.analog.in.style=3;
-end
+% Hints: contents = cellstr(get(hObject,'String')) returns AnalogInStyle contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from AnalogInStyle
 
+handles.analog.in.style=get(hObject,'value');
+update_figure(handles);
 guidata(hObject, handles);
 
 
@@ -2054,38 +2022,6 @@ guidata(hObject, handles);
 % --- Executes during object creation, after setting all properties.
 function DigitalInData_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to DigitalInData (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function DigitalInAddress_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInAddress (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DigitalInAddress as text
-%        str2double(get(hObject,'String')) returns contents of DigitalInAddress as a double
-
-handles.digital.in.address.string=get(hObject,'String');
-tmp=sscanf(handles.digital.in.address.string,'%d.%d-%d');
-handles.digital.in.address.terminal=tmp(2):tmp(3);
-handles.digital.in.address.port=repmat(tmp(1),1,length(handles.digital.in.address.terminal));
-handles.digital.in.curr=max(handles.digital.in.curr,2^length(handles.digital.in.address.terminal));
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInAddress_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInAddress (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
