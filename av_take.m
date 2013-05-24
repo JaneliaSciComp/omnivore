@@ -1069,12 +1069,14 @@ if(~handles.running)
     rate=handles.video.FPS;
   end
   
-  if(isnan(rate) || isempty(rate) || (rate<1))
-    uiwait(errordlg('sampling rate must be a positive integer'));
-    set(handles.StartStop,'enable','on');  drawnow('expose');
-    return;
-  else
-    handles.analog.session.Rate=rate;
+  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+    if(isnan(rate) || isempty(rate) || (rate<1))
+      uiwait(errordlg('sampling rate must be a positive integer'));
+      set(handles.StartStop,'enable','on');  drawnow('expose');
+      return;
+    else
+      handles.analog.session.Rate=rate;
+    end
   end
 
   handles.running=1;
