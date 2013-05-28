@@ -265,6 +265,7 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInNumChannels,'enable','on');
   set(handles.AnalogInChannel,'enable','on');
   set(handles.AnalogInStyle,'enable','on');
+  set(handles.AnalogInFs,'enable','on');
   set(handles.AnalogInXScale,'enable','on');
   set(handles.AnalogInYScale,'enable','on');
 else
@@ -273,6 +274,7 @@ else
   set(handles.AnalogInNumChannels,'enable','off');
   set(handles.AnalogInChannel,'enable','off');
   set(handles.AnalogInStyle,'enable','off');
+  set(handles.AnalogInFs,'enable','off');
   set(handles.AnalogInXScale,'enable','off');
   set(handles.AnalogInYScale,'enable','off');
 end
@@ -352,8 +354,10 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoDirectory,'enable','off');
     set(handles.VideoSave,'value',0);
   end
-  set(handles.VideoFileFormat,'string',handles.video.formatfilelist,...
-      'value',handles.video.formatfilevalue);
+  set(handles.VideoFileFormat,'string',handles.video.fileformatlist,...
+      'value',handles.video.fileformatvalue);
+  set(handles.VideoFileFormatQuality,'string',handles.video.fileformatquality);
+  set_videoquality_tooltip_str(handles);
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
   set(handles.VideoROI,'enable','on');
@@ -624,6 +628,7 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
+    handles.video.pool=1;
     if(exist('matlabpool')==2)
       c=parcluster;
       handles.video.pool=c.NumWorkers-1;
@@ -879,7 +884,7 @@ drawnow;
 
 
 % ---
-function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool,fileformat,quality)
+function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool,fileformat,quality,extension)
 
 persistent time0
 
@@ -898,13 +903,15 @@ end
 time0=time(end);
 
 if(save)
+  %for i=1:size(data,4)
   parfor i=1:size(data,4)
     if(isempty(chan))
-      tmp=fullfile(directory,filename,[num2str(metadata(i).FrameNumber) '.jpg']);
+      tmp=fullfile(directory,filename,[num2str(metadata(i).FrameNumber) extension]);
     else
-      tmp=fullfile(directory,filename,num2str(chan),[num2str(metadata(i).FrameNumber) '.jpg']);
+      tmp=fullfile(directory,filename,num2str(chan),[num2str(metadata(i).FrameNumber) extension]);
     end
     imwrite(data(:,:,:,i),tmp,fileformat,quality{:});
+%    imwrite(data(:,:,:,i),tmp,'jpg');
   end
 end
 
@@ -914,7 +921,7 @@ M.Data(4)=metadata(end).FrameNumber;
 
 % ---
 function video_thread(n,mfile,adaptor,deviceid,formatlist,formatvalue,ROI,...
-    save,directory,filename,pool,counter,fileformat,quality)
+    save,directory,filename,pool,counter,fileformat,quality,extension)
 
 imaqmem(1e10);
 
@@ -940,7 +947,7 @@ for i=1:n
   chan=[];  if(sum(save)>1)  chan=i;  end
   set(vi{i},'FramesAcquiredFcnCount',pool,...
       'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,...
-      vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality));
+      vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality,extension));
   set(vi{i},'LoggingMode','memory','DiskLogger',[]);
   %if(handles.video.save)
   %  vifile=VideoWriter(fullfile(handles.video.directory,[handles.filename '.avi']), ...
@@ -974,7 +981,7 @@ while flag
     M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
     if(M{1+i}.Data(1)>0)
       flag=true;
-      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality)
+      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality,extension)
     end
   end
 end
@@ -1026,10 +1033,10 @@ if(handles.video.on && (nsave>0) && ...
   set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(3))));
   if(nsave>1)
     imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
-        num2str(handles.video.curr),[num2str(handles.video.M{1+handles.video.curr}.Data(4)) '.jpg']));
+        num2str(handles.video.curr),[num2str(handles.video.M{1+handles.video.curr}.Data(4)) handles.video.extension]));
   else
     imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
-        [num2str(handles.video.M{1+handles.video.curr}.Data(4)) '.jpg']));
+        [num2str(handles.video.M{1+handles.video.curr}.Data(4)) handles.video.extension]));
   end
   image(ans,'parent',handles.video.ha);
   axis(handles.video.ha,'off');
@@ -1182,10 +1189,12 @@ if(~handles.running)
           'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
     end
     switch(handles.video.fileformatlist{handles.video.fileformatvalue})
-      case 'jpg'
-        quality={'quality' handles.video.fileformatquality};
-      case 'jp2'
-        quality={'compressionratio' handles.video.fileformatquality};
+      case 'JPG'
+        handles.video.quality={'quality' handles.video.fileformatquality};
+        handles.video.extension='.jpg';
+      case 'JP2'
+        handles.video.quality={'compressionratio' handles.video.fileformatquality};
+        handles.video.extension='.jp2';
     end
     if(exist('matlabpool')==2)
       handles.video.thread=batch(@video_thread,0,...
@@ -1193,7 +1202,7 @@ if(~handles.running)
            handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
            handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
            handles.video.counter,...
-           handles.video.fileformatlist{handles.video.fileformatvalue},quality},...
+           handles.video.fileformatlist{handles.video.fileformatvalue},handles.video.quality,handles.video.extension},...
           'matlabpool',handles.video.pool);
       disp('waiting for batch job to start...');
       while handles.video.M{1}.Data(1)==0  pause(1);  end
@@ -1204,7 +1213,7 @@ if(~handles.running)
           handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
           handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
           handles.video.counter,...
-          handles.video.fileformatlist{handles.video.fileformatvalue},quality);
+          handles.video.fileformatlist{handles.video.fileformatvalue},handles.video.quality,handles.video.extension);
       while handles.video.M{1}.Data(1)==0  pause(1);  end
     end
   end
@@ -2411,4 +2420,40 @@ function VideoFileFormat_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of VideoTrigger
 
 handles.video.fileformatvalue=get(handles.VideoFileFormat,'value');
+set_videoquality_tooltip_str(handles);
 guidata(hObject, handles);
+
+
+function set_videoquality_tooltip_str(handles)
+
+switch(handles.video.fileformatlist{handles.video.fileformatvalue})
+  case 'JPG'
+    set(handles.VideoFileFormatQuality,'tooltipstring','quality (1-100)');
+  case 'JP2'
+    set(handles.VideoFileFormatQuality,'tooltipstring','compression ratio (>1)');
+end
+
+
+function VideoFileFormatQuality_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoFileFormatQuality (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of VideoFileFormatQuality as text
+%        str2double(get(hObject,'String')) returns contents of VideoFileFormatQuality as a double
+
+handles.video.fileformatquality=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function VideoFileFormatQuality_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to VideoFileFormatQuality (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
