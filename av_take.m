@@ -116,6 +116,9 @@ handles.video.trigger=[];
 handles.video.ncounters=0;
 handles.video.counter=1;
 handles.video.compression='Motion JPEG AVI';
+handles.video.fileformatlist={'JPG','JP2'};
+handles.video.fileformatvalue=1;
+handles.video.fileformatquality=75;
 handles.video.pool=1;
 handles.running=0;
 handles.filename='';
@@ -193,6 +196,9 @@ handles.video.trigger=handles_saved.video.trigger;
 handles.video.ncounters=handles_saved.video.ncounters;
 handles.video.counter=handles_saved.video.counter;
 handles.video.compression=handles_saved.video.compression;
+handles.video.fileformatlist=handles_saved.video.fileformatlist;
+handles.video.fileformatvalue=handles_saved.video.fileformatvalue;
+handles.video.fileformatquality=handles_saved.video.fileformatquality;
 handles.video.pool=handles_saved.video.pool;
 handles.running=0;
 handles.filename=handles_saved.filename;
@@ -346,6 +352,8 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoDirectory,'enable','off');
     set(handles.VideoSave,'value',0);
   end
+  set(handles.VideoFileFormat,'string',handles.video.formatfilelist,...
+      'value',handles.video.formatfilevalue);
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
   set(handles.VideoROI,'enable','on');
@@ -362,6 +370,7 @@ else
   set(handles.VideoPreview,'enable','off');
   set(handles.VideoFormat,'enable','off');
 end
+
 
 % ---
 function handles=configure_analog_output_channels(handles)
@@ -870,7 +879,7 @@ drawnow;
 
 
 % ---
-function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool)
+function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool,fileformat,quality)
 
 persistent time0
 
@@ -895,7 +904,7 @@ if(save)
     else
       tmp=fullfile(directory,filename,num2str(chan),[num2str(metadata(i).FrameNumber) '.jpg']);
     end
-    imwrite(data(:,:,:,i),tmp,'jpg');
+    imwrite(data(:,:,:,i),tmp,fileformat,quality{:});
   end
 end
 
@@ -905,7 +914,7 @@ M.Data(4)=metadata(end).FrameNumber;
 
 % ---
 function video_thread(n,mfile,adaptor,deviceid,formatlist,formatvalue,ROI,...
-    save,directory,filename,pool,counter)
+    save,directory,filename,pool,counter,fileformat,quality)
 
 imaqmem(1e10);
 
@@ -931,7 +940,7 @@ for i=1:n
   chan=[];  if(sum(save)>1)  chan=i;  end
   set(vi{i},'FramesAcquiredFcnCount',pool,...
       'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,...
-      vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool));
+      vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality));
   set(vi{i},'LoggingMode','memory','DiskLogger',[]);
   %if(handles.video.save)
   %  vifile=VideoWriter(fullfile(handles.video.directory,[handles.filename '.avi']), ...
@@ -965,7 +974,7 @@ while flag
     M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
     if(M{1+i}.Data(1)>0)
       flag=true;
-      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool)
+      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality)
     end
   end
 end
@@ -1172,12 +1181,19 @@ if(~handles.running)
       handles.video.M{1+i} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', ...
           'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
     end
+    switch(handles.video.fileformatlist{handles.video.fileformatvalue})
+      case 'jpg'
+        quality={'quality' handles.video.fileformatquality};
+      case 'jp2'
+        quality={'compressionratio' handles.video.fileformatquality};
+    end
     if(exist('matlabpool')==2)
       handles.video.thread=batch(@video_thread,0,...
           {handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
            handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
            handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
-           handles.video.counter},...
+           handles.video.counter,...
+           handles.video.fileformatlist{handles.video.fileformatvalue},quality},...
           'matlabpool',handles.video.pool);
       disp('waiting for batch job to start...');
       while handles.video.M{1}.Data(1)==0  pause(1);  end
@@ -1187,7 +1203,8 @@ if(~handles.running)
           handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
           handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
           handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
-          handles.video.counter);
+          handles.video.counter,...
+          handles.video.fileformatlist{handles.video.fileformatvalue},quality);
       while handles.video.M{1}.Data(1)==0  pause(1);  end
     end
   end
@@ -2382,4 +2399,16 @@ function VideoTrigger_Callback(hObject, eventdata, handles)
 handles.video.counter=get(handles.VideoTrigger,'value');
 handles=configure_video_channels(handles);
 update_figure(handles);
+guidata(hObject, handles);
+
+
+% --- Executes on button press in VideoTrigger.
+function VideoFileFormat_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoTrigger (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of VideoTrigger
+
+handles.video.fileformatvalue=get(handles.VideoFileFormat,'value');
 guidata(hObject, handles);
