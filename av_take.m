@@ -780,7 +780,7 @@ if handles.verbose
 end
 
 if(handles.analog.in.record)
-  fwrite(handles.analog.in.fid,evt.Data,'double');
+  fwrite(handles.analog.in.fid,evt.Data','double');
 end
 
 if(~isempty(last_timestamp))
