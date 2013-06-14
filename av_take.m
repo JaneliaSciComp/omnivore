@@ -68,32 +68,6 @@ handles.analog.in.fs=nan;
 handles.analog.in.style=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
-handles.digital.in.on=0;
-handles.digital.in.curr=nan;
-handles.digital.in.record=0;
-handles.digital.in.directory='';
-handles.digital.in.clock.string='';
-handles.digital.in.clock.port=[];
-handles.digital.in.clock.terminal=[];
-handles.digital.in.data.string='';
-handles.digital.in.data.port=[];
-handles.digital.in.data.terminal=[];
-handles.digital.in.error.string='';
-handles.digital.in.error.port=[];
-handles.digital.in.error.terminal=[];
-handles.digital.in.sync.string='';
-handles.digital.in.sync.port=[];
-handles.digital.in.sync.terminal=[];
-handles.hygrometer.on=0;
-handles.hygrometer.save=0;
-handles.hygrometer.directory='';
-handles.hygrometer.object=[];
-handles.hygrometer.period=nan;
-handles.hygrometer.clock=0;     % the digital output line connected to the SHT7x's SCK line
-handles.hygrometer.linein=0;    % the digital input line(s) connected to the SHT7x's DATA line
-handles.hygrometer.lineout=1;   % the digital output line connected to the SHT7x's DATA line
-handles.portin=2;          % which hardware port is used for digital input
-handles.portout=1;         % which hardware port is used for digital output
 handles.video.on=0;
 handles.video.maxn=nan;
 handles.video.n=nan;
@@ -152,32 +126,6 @@ handles.analog.in.fs=handles_saved.analog.in.fs;
 handles.analog.in.style=handles_saved.analog.in.style;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
-handles.digital.in.on=handles_saved.digital.in.on;
-handles.digital.in.curr=handles_saved.digital.in.curr;
-handles.digital.in.record=handles_saved.digital.in.record;
-handles.digital.in.directory=handles_saved.digital.in.directory;
-handles.digital.in.clock.string=handles_saved.digital.in.clock.string;
-handles.digital.in.clock.port=handles_saved.digital.in.clock.port;
-handles.digital.in.clock.terminal=handles_saved.digital.in.clock.terminal;
-handles.digital.in.data.string=handles_saved.digital.in.data.string;
-handles.digital.in.data.port=handles_saved.digital.in.data.port;
-handles.digital.in.data.terminal=handles_saved.digital.in.data.terminal;
-handles.digital.in.error.string=handles_saved.digital.in.error.string;
-handles.digital.in.error.port=handles_saved.digital.in.error.port;
-handles.digital.in.error.terminal=handles_saved.digital.in.error.terminal;
-handles.digital.in.sync.string=handles_saved.digital.in.sync.string;
-handles.digital.in.sync.port=handles_saved.digital.in.sync.port;
-handles.digital.in.sync.terminal=handles_saved.digital.in.sync.terminal;
-handles.hygrometer.on=handles_saved.hygrometer.on;
-handles.hygrometer.save=handles_saved.hygrometer.save;
-handles.hygrometer.directory=handles_saved.hygrometer.directory;
-handles.hygrometer.object=handles_saved.hygrometer.object;
-handles.hygrometer.period=handles_saved.hygrometer.period;
-handles.hygrometer.clock=handles_saved.hygrometer.clock;
-handles.hygrometer.linein=handles_saved.hygrometer.linein;
-handles.hygrometer.lineout=handles_saved.hygrometer.lineout;
-handles.portin=handles_saved.portin;
-handles.portout=handles_saved.portout;
 handles.video.on=handles_saved.video.on;
 handles.video.maxn=handles_saved.video.maxn;
 handles.video.n=handles_saved.video.n;
@@ -279,61 +227,6 @@ else
   set(handles.AnalogInYScale,'enable','off');
 end
 
-set(handles.DigitalInOnOff,'value',handles.digital.in.on,'enable','on');
-if(handles.digital.in.on)
-  set(handles.DigitalInChannel,'string',[1:4]);
-  set(handles.DigitalInChannel,'value',handles.digital.in.curr);
-  set(handles.DigitalInDirectory,'string',handles.digital.in.directory);
-  if(handles.digital.in.record)
-    set(handles.DigitalInDirectory,'enable','on');
-    set(handles.DigitalInRecord,'value',1);
-  else
-    set(handles.DigitalInDirectory,'enable','off');
-    set(handles.DigitalInRecord,'value',0);
-  end
-  set(handles.DigitalInClock,'string',handles.digital.in.clock.string);
-  set(handles.DigitalInData,'string',handles.digital.in.data.string);
-  set(handles.DigitalInError,'string',handles.digital.in.error.string);
-  set(handles.DigitalInSync,'string',handles.digital.in.sync.string);
-  set(handles.DigitalInRecord,'enable','on');
-  set(handles.DigitalInDirectory,'enable','on');
-  set(handles.DigitalInXScale,'enable','on');
-  set(handles.DigitalInYScale,'enable','on');
-  set(handles.DigitalInChannel,'enable','on');
-  set(handles.DigitalInClock,'enable','on');
-  set(handles.DigitalInData,'enable','on');
-  set(handles.DigitalInError,'enable','on');
-  set(handles.DigitalInSync,'enable','on');
-else
-  set(handles.DigitalInRecord,'enable','off');
-  set(handles.DigitalInDirectory,'enable','off');
-  set(handles.DigitalInXScale,'enable','off');
-  set(handles.DigitalInYScale,'enable','off');
-  set(handles.DigitalInChannel,'enable','off');
-  set(handles.DigitalInClock,'enable','off');
-  set(handles.DigitalInData,'enable','off');
-  set(handles.DigitalInError,'enable','off');
-  set(handles.DigitalInSync,'enable','off');
-end
-
-set(handles.HygrometerOnOff,'value',handles.hygrometer.on,'enable','on');
-if(handles.hygrometer.on)
-  set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
-  set(handles.HygrometerPeriod,'string',num2str(handles.hygrometer.period));
-  set(handles.HygrometerSave,'enable','on');
-  set(handles.HygrometerPeriod,'enable','on');
-  if(handles.hygrometer.save)
-    set(handles.HygrometerDirectory,'enable','on');
-    set(handles.HygrometerSave,'value',1);
-  else
-    set(handles.HygrometerDirectory,'enable','off');
-    set(handles.HygrometerSave,'value',0);
-  end
-else
-  set(handles.HygrometerSave,'enable','off');
-  set(handles.HygrometerPeriod,'enable','off');
-end
-
 set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
@@ -423,61 +316,6 @@ end
 
 
 % ---
-function handles=configure_digital_input_channels(handles)
-
-i=1;
-while i<=length(handles.digital.session.Channels)
-  if strcmp(class(handles.digital.session.Channels(i)),'daq.ni.DigitalInputChannel')
-    handles.digital.session.removeChannel(i);
-  else
-    i=i+1;
-  end
-end
-
-if(handles.digital.in.on)
-  handles.digital.session.addDigitalChannel(handles.daqdevices.ID,'port0/line0:7','InputOnly');
-%   if(~isempty(handles.digital.in.data.port))
-%     for i=1:length(handles.digital.in.data.port)
-%       [~,handles.digital.in.data.idx(i)]=...
-%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-%           ['port' num2str(handles.digital.in.data.port(i)) '/line' num2str(handles.digital.in.data.terminal(i))],...
-%           'InputOnly');
-%     end
-%   end
-%   if(~isempty(handles.digital.in.address.port))
-%     for i=1:length(handles.digital.in.address.port)
-%       [~,handles.digital.in.address.idx(i)]=...
-%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-%           ['port' num2str(handles.digital.in.address.port(i)) '/line' num2str(handles.digital.in.address.terminal(i))],...
-%           'InputOnly');
-%     end
-%   end
-%   if(~isempty(handles.digital.in.error.port))
-%     for i=1:length(handles.digital.in.error.port)
-%       [~,handles.digital.in.error.idx(i)]=...
-%           handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-%           ['port' num2str(handles.digital.in.error.port(i)) '/line' num2str(handles.digital.in.error.terminal(i))],...
-%           'InputOnly');
-%     end
-%   end
-%   if(~isempty(handles.digital.in.sync.port))
-%     [~,handles.digital.in.sync.idx]=...
-%         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-%         ['port' num2str(handles.digital.in.sync.port) '/line' num2str(handles.digital.in.sync.terminal)],...
-%         'InputOnly');
-%   end
-  if((~isempty(handles.digital.in.clock.port)) && (length(handles.digital.session.Channels)>0))
-%     [~,handles.digital.in.clock.idx]=...
-%         handles.digital.session.addDigitalChannel(handles.daqdevices.ID,...
-%         ['port' num2str(handles.digital.in.clock.port) '/line' num2str(handles.digital.in.clock.terminal)],...
-%         'InputOnly');
-    handles.digital.session.addClockConnection('External','PXI1Slot3/PFI7','ScanClock');
-%    handles.digital.session.Rate=40e3;
-  end
-end
-
-
-% ---
 function handles=configure_video_channels(handles)
 
 i=1;
@@ -497,21 +335,6 @@ if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(
 end
  
 
-% ---
-function handles=configure_hygrometer(handles)
-
-if(handles.hygrometer.on)
-  handles.hygrometer.object=hygrometer(handles.daqdevices, handles.portout, handles.portin, ...
-      handles.hygrometer.clock, handles.hygrometer.lineout, handles.hygrometer.linein);
-  [T RH timeT timeRH]=handles.hygrometer.object.take;
-  set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
-else
-  if(~isempty(handles.hygrometer.object))
-    handles.hygrometer.object.close;
-  end
-end
-
-  
 % --- Executes just before av_take is made visible.
 function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
@@ -582,21 +405,11 @@ if(isfield(handles,'daqdevices'))
   handles.analog.in.curr=min(handles.analog.in.curr,handles.analog.in.maxn);
   handles=configure_analog_input_channels(handles);
 
-  handles.digital.session=daq.createSession('ni');
-  handles.digital.session.IsContinuous=true;
-  handles.digital.session.NotifyWhenDataAvailableExceeds=10000;
-  %handles.digital.session.Rate=125000;
-  handles=configure_digital_input_channels(handles);
-
-  handles.hygrometer.period=max(handles.hygrometer.period,10);
-  handles=configure_hygrometer(handles);
-
   idx=find(cellfun(@(x) strcmp(x,'CounterOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
   handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
 else
   set(handles.AnalogOutOnOff,'enable','off');
   set(handles.AnalogInOnOff,'enable','off');
-  set(handles.HygrometerOnOff,'enable','off');
 end
 
 if(isfield(handles,'videoadaptors'))
@@ -695,7 +508,6 @@ if(isfield(handles,'daqdevices'))
     return;
   end
   delete(handles.analog.session);
-  delete(handles.digital.session);
   if(~isempty(handles.hygrometer.object))
     handles.hygrometer.object.close;
   end
@@ -703,7 +515,7 @@ if(isfield(handles,'daqdevices'))
   handles.analog.out.ranges_available=[];
   handles.analog.in.ranges_available=[];
   handles.analog.in.terminal_configuration_available=[];
-  handles.hygrometer.object=[];  handles.video.input=[];  handles.video.trigger=[];
+  handles.video.input=[];  handles.video.trigger=[];
   handles.timer=[];
   save(handles.rcfilename,'handles');
 end
@@ -798,89 +610,6 @@ plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
 if handles.verbose
   disp(['exiting  analog_in_callback:  ' num2str(toc) 's']);
 end
-
-
-% --- 
-function digital_in_callback(src,evt,hObject)
-
-persistent last_timestamp
-
-handles=guidata(hObject);
-
-if handles.verbose
-  disp('entering digital_in_callback');
-  tic
-end
-
-if(handles.digital.in.record)
-  tmp=uint8(sum(bsxfun(@times,evt.Data,2.^(0:7)),2));
-  fwrite(handles.digital.in.fid,tmp,'uint8');
-end
-
-%if(~isempty(last_timestamp))
-%  tmp=round((evt.TimeStamps(1)-last_timestamp)*handles.analog.in.fs);
-%  if(tmp~=1)
-%    disp(['warning:  skipped ' num2str(tmp) ' analog input samples']);
-%  end
-%end
-%last_timestamp=evt.TimeStamps(end);
-
-DataT=evt.Data';
-
-idx=find(evt.Data(:,handles.digital.in.clock.terminal+1));
-idx=idx-handles.digital.in.clock.port;
-idx=idx(1:(end-1));
-idx=idx+2*(handles.digital.in.curr-1);
-
-idx2=sub2ind(size(DataT),handles.digital.in.data.terminal+1,handles.digital.in.data.port+1);
-tmp=arrayfun(@(i) DataT(sub2ind(size(DataT),1,i)+idx2-1)',idx,'uniformoutput',false);
-sum(bsxfun(@times,[tmp{:}]',2.^(0:10)),2);
-plot(handles.DigitalInPlot,ans,'k-');
-
-%set(handles.DigitalInFs,'string',num2str((length(idx)-1)/(evt.TimeStamps(idx(end))-evt.TimeStamps(idx(1)))));
-
-%axis(handles.AnalogInPlot,'tight');
-%axis(handles.AnalogInPlot,'off');
-
-tmp1=sum(evt.Data((idx(1)+handles.digital.in.error.port(1)):2:end,...
-    handles.digital.in.error.terminal(1)+1));
-tmp2=sum(evt.Data((idx(1)+handles.digital.in.error.port(2)):2:end,...
-    handles.digital.in.error.terminal(2)+1));
-handles.digital.in.error1=handles.digital.in.error1+tmp1;
-set(handles.DigitalInError1,'string',num2str(handles.digital.in.error1));
-handles.digital.in.error2=handles.digital.in.error2+tmp2;
-set(handles.DigitalInError2,'string',num2str(handles.digital.in.error2));
-
-%drawnow('expose')
-
-if handles.verbose
-  disp(['exiting  digital_in_callback: ' num2str(toc) 's']);
-end
-
-
-% ---
-function hygrometer_callback(src,evt,handles)
-
-fc=get(handles.HygrometerData,'foregroundcolor');
-bc=get(handles.HygrometerData,'backgroundcolor');
-set(handles.HygrometerData,'foregroundcolor',bc);
-set(handles.HygrometerData,'backgroundcolor',fc);
-drawnow;
-
-[T RH timeT timeRH]=handles.hygrometer.object.take;
-
-set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
-
-if(handles.hygrometer.save)
-  fprintf(handles.hygrometer.fid,'%f ',etime(clock,datevec(timeT)));
-  fprintf(handles.hygrometer.fid,'%f ',T);
-  fprintf(handles.hygrometer.fid,'%f ',RH);
-  fprintf(handles.hygrometer.fid,'\n');
-end
-
-set(handles.HygrometerData,'foregroundcolor',fc);
-set(handles.HygrometerData,'backgroundcolor',bc);
-drawnow;
 
 
 % ---
@@ -1107,15 +836,6 @@ if(~handles.running)
   set(handles.AnalogInFs,'enable','off');
   set(handles.AnalogInRange,'enable','off');
   set(handles.AnalogInTerminalConfiguration,'enable','off');
-  set(handles.DigitalInOnOff,'enable','off');
-  set(handles.DigitalInRecord,'enable','off');
-  set(handles.DigitalInClock,'enable','off');
-  set(handles.DigitalInData,'enable','off');
-  set(handles.DigitalInError,'enable','off');
-  set(handles.DigitalInSync,'enable','off');
-  set(handles.HygrometerOnOff,'enable','off');
-  set(handles.HygrometerSave,'enable','off');
-  set(handles.HygrometerPeriod,'enable','off');
   set(handles.VideoOnOff,'enable','off');
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFormat,'enable','off');
@@ -1145,29 +865,6 @@ if(~handles.running)
     end
     handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
         @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
-  end
-
-  if(handles.digital.in.on)
-    handles.digital.in.fid = nan;
-    if(handles.digital.in.record)
-      handles.digital.in.fid = fopen(fullfile(handles.digital.in.directory,[handles.filename 'd.bin']),'w');
-      %version#, sample rate, nchan
-      %fwrite(handles.digital.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
-    end
-    handles.digital.in.error1=0;
-    handles.digital.in.error2=0;
-    handles.listenerDigitalIn=handles.digital.session.addlistener('DataAvailable',...
-        @(hObject,eventdata)digital_in_callback(hObject,eventdata,handles.figure1));
-  end
-
-  if(handles.hygrometer.on)
-    handles.hygrometer.fid=nan;
-    if(handles.hygrometer.save)
-      handles.hygrometer.fid=fopen(fullfile(handles.hygrometer.directory,[handles.filename '.hyg']),'w');
-    end
-    handles.hygrometer.timer=timer('Name','hygrometer','Period',handles.hygrometer.period,'ExecutionMode','fixedRate',...
-        'TimerFcn',@(hObject,eventdata)hygrometer_callback(hObject,eventdata,handles));
-    start(handles.hygrometer.timer);
   end
 
   nsave=sum(handles.video.save);
@@ -1220,9 +917,6 @@ if(~handles.running)
 
   guidata(hObject, handles);
 
-  if(handles.digital.in.on)
-    handles.digital.session.startBackground;
-  end
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     handles.analog.session.IsContinuous=true;
     handles.analog.session.startBackground;
@@ -1243,9 +937,6 @@ if(~handles.running)
 %   end
 
 elseif(handles.running)
-  if(handles.digital.in.on)
-    handles.digital.session.stop();
-  end
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     handles.analog.session.stop();
     handles.analog.session.IsContinuous=false;
@@ -1259,21 +950,6 @@ elseif(handles.running)
     delete(handles.listenerAnalogIn);
     if(handles.analog.in.record)
       fclose(handles.analog.in.fid);
-    end
-  end
-
-  if(handles.digital.in.on)
-    delete(handles.listenerDigitalIn);
-    if(handles.digital.in.record)
-      fclose(handles.digital.in.fid);
-    end
-  end
-
-  if(handles.hygrometer.on)
-    stop(handles.hygrometer.timer);
-    delete(handles.hygrometer.timer);
-    if(handles.hygrometer.save)
-      fclose(handles.hygrometer.fid);
     end
   end
 
@@ -1840,341 +1516,6 @@ function AnalogInTerminalConfiguration_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% --- Executes on button press in DigitalInOnOff.
-function DigitalInOnOff_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInOnOff (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of DigitalInOnOff
-
-handles.digital.in.on=~handles.digital.in.on;
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInError2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInError2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInFs_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInFs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on slider movement.
-function DigitalInXScale_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInXScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInXScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInXScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-% --- Executes on slider movement.
-function DigitalInYScale_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInYScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInYScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInYScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-% --- Executes on selection change in DigitalInChannel.
-function DigitalInChannel_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInChannel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns DigitalInChannel contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from DigitalInChannel
-
-handles.digital.in.curr=get(handles.DigitalInChannel,'value');
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInChannel_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInChannel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in DigitalInRecord.
-function DigitalInRecord_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInRecord (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of DigitalInRecord
-
-persistent directory
-if(isempty(directory))  directory=pwd;  end
-
-handles=guidata(hObject);
-
-if(get(handles.DigitalInRecord,'value'))
-  directory=uigetdir(directory,'Select digital input directory');
-  if(directory~=0)
-    handles.digital.in.record=1;
-    handles.digital.in.directory=directory;
-    set(handles.DigitalInDirectory,'string',handles.digital.in.directory,'enable','on');
-  else
-    set(handles.DigitalInRecord,'value',0);
-  end
-else
-  handles.digital.in.record=0;
-  set(handles.DigitalInDirectory,'enable','off');
-end
-
-guidata(hObject,handles);
-
-
-function DigitalInClock_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInClock (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DigitalInClock as text
-%        str2double(get(hObject,'String')) returns contents of DigitalInClock as a double
-
-handles.digital.in.clock.string=get(hObject,'String');
-tmp=sscanf(handles.digital.in.clock.string,'%d.%d');
-handles.digital.in.clock.port=tmp(1);
-handles.digital.in.clock.terminal=tmp(2);
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInClock_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInClock (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function DigitalInData_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInData (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DigitalInData as text
-%        str2double(get(hObject,'String')) returns contents of DigitalInData as a double
-
-handles.digital.in.data.string=get(hObject,'String');
-tmp=sscanf(handles.digital.in.data.string,'%d.%d-%d,%d.%d-%d');
-handles.digital.in.data.terminal=[tmp(2):tmp(3) tmp(5):tmp(6)];
-handles.digital.in.data.port=[repmat(tmp(1),1,tmp(3)-tmp(2)+1) repmat(tmp(4),1,tmp(6)-tmp(5)+1)];
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInData_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInData (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function DigitalInError_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInError (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DigitalInError as text
-%        str2double(get(hObject,'String')) returns contents of DigitalInError as a double
-
-handles.digital.in.error.string=get(hObject,'String');
-tmp=sscanf(handles.digital.in.error.string,'%d.%d-%d');
-handles.digital.in.error.terminal=tmp(2):tmp(3);
-handles.digital.in.error.port=repmat(tmp(1),1,length(handles.digital.in.error.terminal));
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInError_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInError (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function DigitalInSync_Callback(hObject, eventdata, handles)
-% hObject    handle to DigitalInSync (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DigitalInSync as text
-%        str2double(get(hObject,'String')) returns contents of DigitalInSync as a double
-
-handles.digital.in.sync.string=get(hObject,'String');
-tmp=sscanf(handles.digital.in.sync.string,'%d.%d');
-handles.digital.in.sync.port=tmp(1);
-handles.digital.in.sync.terminal=tmp(2);
-handles=configure_digital_input_channels(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function DigitalInSync_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DigitalInSync (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-% --- Executes on button press in HygrometerOnOff.
-function HygrometerOnOff_Callback(hObject, eventdata, handles)
-% hObject    handle to HygrometerOnOff (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of HygrometerOnOff
-
-handles.hygrometer.on=~handles.hygrometer.on;
-handles=configure_hygrometer(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
-function HygrometerPeriod_Callback(hObject, eventdata, handles)
-% hObject    handle to HygrometerPeriod (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of HygrometerPeriod as text
-%        str2double(get(hObject,'String')) returns contents of HygrometerPeriod as a double
-
-handles.hygrometer.period=str2num(get(hObject,'String'));
-update_figure(handles);
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function HygrometerPeriod_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to HygrometerPeriod (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in HygrometerSave.
-function HygrometerSave_Callback(hObject, eventdata, handles)
-% hObject    handle to HygrometerSave (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of HygrometerSave
-
-persistent directory
-if(isempty(directory))  directory=pwd;  end
-
-handles=guidata(hObject);
-if(get(handles.HygrometerSave,'value'))
-  directory=uigetdir(directory,'Select hygrometer directory');
-  if(directory~=0)
-    handles.hygrometer.save=1;
-    handles.hygrometer.directory=directory;
-    set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
-    set(handles.HygrometerDirectory,'enable','on');
-  else
-    set(handles.HygrometerSave,'value',0);
-  end
-else
-  handles.hygrometer.save=0;
-  set(handles.HygrometerDirectory,'enable','off');
-end
-guidata(hObject,handles);
 
 
 % --- Executes on button press in VideoOnOff.
