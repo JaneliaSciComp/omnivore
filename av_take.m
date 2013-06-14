@@ -352,7 +352,7 @@ function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
 %   monitor video while recording?
 %   hygrometer interuptible
 
-handles.rcfilename = 'most_recent_config.mat';
+handles.rcfilename = 'most_recent_av_config.mat';
 if(exist(handles.rcfilename)==2)
   handles=load_configuration_file(handles.rcfilename,handles);
 else
@@ -508,10 +508,7 @@ if(isfield(handles,'daqdevices'))
     return;
   end
   delete(handles.analog.session);
-  if(~isempty(handles.hygrometer.object))
-    handles.hygrometer.object.close;
-  end
-  handles.daqdevices=[];  handles.analog.session=[];  handles.digital.session=[];  handles.listener1=[];
+  handles.daqdevices=[];  handles.analog.session=[];  handles.listener1=[];
   handles.analog.out.ranges_available=[];
   handles.analog.in.ranges_available=[];
   handles.analog.in.terminal_configuration_available=[];

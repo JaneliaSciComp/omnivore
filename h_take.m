@@ -138,7 +138,7 @@ function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
 %   monitor video while recording?
 %   hygrometer interuptible
 
-handles.rcfilename = 'most_recent_config.mat';
+handles.rcfilename = 'most_recent_h_config.mat';
 if(exist(handles.rcfilename)==2)
   handles=load_configuration_file(handles.rcfilename,handles);
 else
