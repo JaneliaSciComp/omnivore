@@ -97,7 +97,7 @@ handles.video.pool=1;
 handles.running=0;
 handles.filename='';
 handles.timelimit=0;
-handles.verbose=true;
+handles.verbose=0;
 
 
 % ---
@@ -268,6 +268,8 @@ else
   set(handles.VideoFormat,'enable','off');
 end
 
+set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
+
 
 % ---
 function handles=configure_analog_output_channels(handles)
@@ -361,8 +363,8 @@ end
 
 try
   % next two lines only needed for roian's rig
-  %daq.reset;
-  %daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  daq.reset;
+  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   daq.getDevices;
   handles.daqdevices=ans(1);
 catch
@@ -482,6 +484,11 @@ function system_monitor_callback(obj,src,handles)
 
 persistent last_cpu
 
+if handles.verbose>1
+  disp('entering audio/video system_monitor_callback');
+  tic
+end
+
 next_cpu=handles.system_monitor.object.cpuTimes();
 mem=handles.system_monitor.object.physical();
 if(~isempty(last_cpu))
@@ -491,6 +498,10 @@ if(~isempty(last_cpu))
   drawnow
 end
 last_cpu=next_cpu;
+
+if handles.verbose>1
+  disp(['exiting  audio/video system_monitor_callback:    ' num2str(toc) 's']);
+end
 
 
 % ---
@@ -535,7 +546,7 @@ function analog_out_callback(src,evt,hObject)
 
 handles=guidata(hObject);
 
-if handles.verbose
+if handles.verbose>0
   disp('entering analog_out_callback');
   tic
 end
@@ -571,7 +582,7 @@ handles.analog.session.queueOutputData(out);
 
 guidata(hObject, handles);
 
-if handles.verbose
+if handles.verbose>0
   disp(['exiting  analog_out_callback: ' num2str(toc) 's']);
 end
 
@@ -583,7 +594,7 @@ persistent last_timestamp
 
 handles=guidata(hObject);
 
-if handles.verbose
+if handles.verbose>0
   disp('entering analog_in_callback');
   tic
 end
@@ -604,7 +615,7 @@ plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
-if handles.verbose
+if handles.verbose>0
   disp(['exiting  analog_in_callback:  ' num2str(toc) 's']);
 end
 
@@ -719,8 +730,8 @@ M=[];
 % ---
 function display_callback(src,evt,handles)
 
-if handles.verbose
-  disp('entering display_callback');
+if handles.verbose>1
+  disp('entering audio/video display_callback');
   tic
 end
 
@@ -771,8 +782,8 @@ end
 
 drawnow('expose')
 
-if handles.verbose
-  disp(['exiting  display_callback:    ' num2str(toc) 's']);
+if handles.verbose>1
+  disp(['exiting  audio/video display_callback:    ' num2str(toc) 's']);
 end
 
 
@@ -840,6 +851,7 @@ if(~handles.running)
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoPreview,'enable','off');
+  set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
   if(handles.analog.out.on)
@@ -1795,3 +1807,16 @@ function VideoFileFormatQuality_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes when selected object is changed in VerboseLevel.
+function VerboseLevel_Callback(hObject, eventdata, handles)
+% hObject    handle to VerboseLevel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns VerboseLevel contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from VerboseLevel
+
+handles.verbose=-1+get(hObject,'value');
+guidata(hObject, handles);

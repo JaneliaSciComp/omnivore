@@ -90,12 +90,13 @@ set(handles.HygrometerPeriod,'string',num2str(handles.hygrometer.period));
 set(handles.HygrometerSave,'enable','on');
 set(handles.HygrometerPeriod,'enable','on');
 if(handles.hygrometer.save)
-set(handles.HygrometerDirectory,'enable','on');
-set(handles.HygrometerSave,'value',1);
+  set(handles.HygrometerDirectory,'enable','on');
+  set(handles.HygrometerSave,'value',1);
 else
-set(handles.HygrometerDirectory,'enable','off');
-set(handles.HygrometerSave,'value',0);
+  set(handles.HygrometerDirectory,'enable','off');
+  set(handles.HygrometerSave,'value',0);
 end
+
 set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
 
 
@@ -195,7 +196,7 @@ end
 last_cpu=next_cpu;
 
 if handles.verbose>1
-  disp(['exiting hygrometer system_monitor_callback:    ' num2str(toc) 's']);
+  disp(['exiting  hygrometer system_monitor_callback:    ' num2str(toc) 's']);
 end
 
 
@@ -303,7 +304,7 @@ end
 drawnow('expose')
 
 if handles.verbose>1
-  disp(['exiting hygrometer display_callback:    ' num2str(toc) 's']);
+  disp(['exiting  hygrometer display_callback:    ' num2str(toc) 's']);
 end
 
 
@@ -512,7 +513,7 @@ end
 guidata(hObject,handles);
 
 
-% --- Executes when selected object is changed in AnalogOutStyle.
+% --- Executes when selected object is changed in VerboseLevel.
 function VerboseLevel_Callback(hObject, eventdata, handles)
 % hObject    handle to VerboseLevel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
