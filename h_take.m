@@ -147,8 +147,8 @@ end
 
 try
   % next two lines only needed for roian's rig
-  daq.reset;
-  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  %daq.reset;
+  %daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   daq.getDevices;
   handles.daqdevices=ans(1);
 catch
@@ -224,6 +224,7 @@ if(isfield(handles,'daqdevices'))
   end
   handles.daqdevices=[];  handles.digital.session=[];  handles.listener1=[];
   handles.hygrometer.object=[];
+  handles.hygrometer.timer=[];
   handles.timer=[];
   save(handles.rcfilename,'handles');
 end
@@ -243,6 +244,11 @@ varargout{1} = handles.output;
 
 % ---
 function hygrometer_callback(src,evt,handles)
+
+if handles.verbose
+  disp('entering hygrometer_callback');
+  tic
+end
 
 fc=get(handles.HygrometerData,'foregroundcolor');
 bc=get(handles.HygrometerData,'backgroundcolor');
@@ -264,6 +270,10 @@ end
 set(handles.HygrometerData,'foregroundcolor',fc);
 set(handles.HygrometerData,'backgroundcolor',bc);
 drawnow;
+
+if handles.verbose
+  disp(['exiting  hygrometer_callback:    ' num2str(toc) 's']);
+end
 
 
 % ---

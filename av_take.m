@@ -361,8 +361,8 @@ end
 
 try
   % next two lines only needed for roian's rig
-  daq.reset;
-  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  %daq.reset;
+  %daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   daq.getDevices;
   handles.daqdevices=ans(1);
 catch
