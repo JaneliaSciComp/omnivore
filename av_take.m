@@ -256,7 +256,6 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoROI,'enable','on');
   set(handles.VideoNumChannels,'enable','on');
   set(handles.VideoChannel,'enable','on');
-  set(handles.VideoPreview,'enable','on');
   set(handles.VideoFormat,'enable','on');
 else
   set(handles.VideoSave,'enable','off');
@@ -264,7 +263,6 @@ else
   set(handles.VideoROI,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoChannel,'enable','off');
-  set(handles.VideoPreview,'enable','off');
   set(handles.VideoFormat,'enable','off');
 end
 
@@ -350,8 +348,7 @@ function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
 %   implement equalizer
 %   implement time limit
 %   implement y/x-scales on analog
-%   implement multiple channels of video
-%   monitor video while recording?
+%   test multiple channels of video
 %   hygrometer interuptible
 
 handles.rcfilename = 'most_recent_av_config.mat';
@@ -519,7 +516,7 @@ if(isfield(handles,'daqdevices'))
     return;
   end
   delete(handles.analog.session);
-  handles.daqdevices=[];  handles.analog.session=[];  handles.listener1=[];
+  handles.daqdevices=[];  handles.analog.session=[];
   handles.analog.out.ranges_available=[];
   handles.analog.in.ranges_available=[];
   handles.analog.in.terminal_configuration_available=[];
@@ -621,71 +618,88 @@ end
 
 
 % ---
-function video_callback(src,evt,vi,M1,M,save,directory,filename,chan,pool,fileformat,quality,extension)
+function video_callback(src,evt,handles,idx)
 
 persistent time0
 
 tic;
-%if M1.Data(1)==0  return;  end
 
 try
-  [data time metadata]=getdata(vi,pool);
+  [data time metadata]=getdata(handles.video.vi{idx},handles.video.pool);
 catch
-  [data time metadata]=getdata(vi);
+  [data time metadata]=getdata(handles.video.vi{idx});
 end
 
-if(~isempty(time0))
-  M.Data(2)=length(time)/(time(end)-time0);
-end
-time0=time(end);
-
-if(save)
+if(handles.video.save)
+  flag=sum(handles.video.save);
+  directory=handles.video.directory{idx};
+  filename=[handles.filename 'v'];
+  extension=handles.video.extension;
+  format=handles.video.fileformatlist{handles.video.fileformatvalue};
+  quality=handles.video.quality;
   %for i=1:size(data,4)
   parfor i=1:size(data,4)
-    if(isempty(chan))
-      tmp=fullfile(directory,filename,[num2str(metadata(i).FrameNumber) extension]);
+    if(flag==1)
+      tmp=fullfile(directory, filename, [num2str(metadata(i).FrameNumber) extension]);
     else
-      tmp=fullfile(directory,filename,num2str(chan),[num2str(metadata(i).FrameNumber) extension]);
+      tmp=fullfile(directory, filename, num2str(i), [num2str(metadata(i).FrameNumber) extension]);
     end
-    imwrite(data(:,:,:,i),tmp,fileformat,quality{:});
-%    imwrite(data(:,:,:,i),tmp,'jpg');
+    imwrite(data(:,:,:,i), tmp, format, quality{:});
   end
 end
 
-M.Data(3)=pool/toc;
-M.Data(4)=metadata(end).FrameNumber;
+if handles.video.curr==idx
+  if(~isempty(time0))
+    set(handles.VideoFPSAchieved,'string',num2str(round(length(time)/(time(end)-time0))));
+  end
+  time0=time(end);
+  set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.pool/toc)));
+  set(handles.VideoFramesAvailable,'string',num2str(get(handles.video.vi{idx},'FramesAvailable')));
+end
 
 
 % ---
-function video_thread(n,mfile,adaptor,deviceid,formatlist,formatvalue,ROI,...
-    save,directory,filename,pool,counter,fileformat,quality,extension)
+function handles=video_thread(handles)
 
 imaqmem(1e10);
 
-% continue/stop, video.n * (frames available, FPS achieved, FPS processed, most recent frame #)
-M{1} = memmapfile(mfile, 'Writable', true, 'Format', 'double', 'Repeat', 1);
-for i=1:n
-  if(~save(i))  continue;  end
-  M{1+i} = memmapfile(mfile, 'Writable', true, 'Format', 'double', 'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
-
-  vi{i}=videoinput(adaptor{i},deviceid(i),formatlist{i}{formatvalue(i)});
-  if(~isempty(ROI))
-    set(vi{i},'ROIPosition',ROI(i,:));
-  end
-  if(counter>1)
-    set(vi{i},'FramesPerTrigger',1,'TriggerRepeat',inf);
-    triggerconfig(vi{i}, 'hardware', 'fallingEdge', 'externalTriggerMode0-Source0');
+for i=1:handles.video.n
+  if(~handles.video.save(i))  continue;  end
+  if(sum(handles.video.save)==1)
+    mkdir(fullfile(handles.video.directory{i},[handles.filename 'v']));
   else
-    set(vi{i},'FramesPerTrigger',inf,'TriggerRepeat',1);
-    triggerconfig(vi{i}, 'immediate', 'none', 'none');
+    mkdir(fullfile(handles.video.directory{i},[handles.filename 'v'],num2str(i)));
+  end
+end
+switch(handles.video.fileformatlist{handles.video.fileformatvalue})
+  case 'JPG'
+    handles.video.quality={'quality' handles.video.fileformatquality};
+    handles.video.extension='.jpg';
+  case 'JP2'
+    handles.video.quality={'compressionratio' handles.video.fileformatquality};
+    handles.video.extension='.jp2';
+end
+    
+for i=1:handles.video.n
+  handles.video.vi{i}=videoinput(handles.video.adaptor{i}, handles.video.deviceid(i), handles.video.formatlist{i}{handles.video.formatvalue(i)});
+  if(~isempty(handles.video.ROI))
+    set(handles.video.vi{i},'ROIPosition',handles.video.ROI(i,:));
+  end
+  if(handles.video.counter>1)
+    set(handles.video.vi{i},'FramesPerTrigger',1,'TriggerRepeat',inf);
+    triggerconfig(handles.video.vi{i}, 'hardware', 'fallingEdge', 'externalTriggerMode0-Source0');
+  else
+    set(handles.video.vi{i},'FramesPerTrigger',inf,'TriggerRepeat',1);
+    triggerconfig(handles.video.vi{i}, 'immediate', 'none', 'none');
   end
 
-  set(vi{i},'FrameGrabInterval',1);
-  chan=[];  if(sum(save)>1)  chan=i;  end
-  set(vi{i},'FramesAcquiredFcnCount',pool,...
-      'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,...
-      vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality,extension));
-  set(vi{i},'LoggingMode','memory','DiskLogger',[]);
+  set(handles.video.vi{i},'FrameGrabInterval',1);
+
+  if(handles.video.save(i))
+    set(handles.video.vi{i},'FramesAcquiredFcnCount',handles.video.pool,...
+        'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,handles,i));
+    set(handles.video.vi{i},'LoggingMode','memory','DiskLogger',[]);
+  end
   %if(handles.video.save)
   %  vifile=VideoWriter(fullfile(handles.video.directory,[handles.filename '.avi']), ...
   %      handles.video.compression);
@@ -695,36 +709,7 @@ for i=1:n
   %end
 end
 
-start([vi{:}]);
-%trigger(vi);
-M{1}.Data(1)=1;
-
-while M{1}.Data(1)
-  pause(0.1);
-  for i=1:n
-    if(~save(i))  continue;  end
-    M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
-    %disp(M{1+i}.Data(1));
-  end
-end
-
-stop([vi{:}]);
-
-flag=true;
-while flag
-  flag=false;
-  for i=1:n
-    if(~save(i))  continue;  end
-    M{1+i}.Data(1)=get(vi{i},'FramesAvailable');
-    if(M{1+i}.Data(1)>0)
-      flag=true;
-      video_callback([],[],vi{i},M{1},M{1+i},save(i),directory{i},filename,chan,pool,fileformat,quality,extension)
-    end
-  end
-end
-
-delete([vi{:}]);
-M=[];
+start([handles.video.vi{:}]);
 
 
 % ---
@@ -759,25 +744,6 @@ end
 
 if(handles.analog.out.on)
   set(handles.AnalogOutBuffer,'string',num2str(handles.analog.session.ScansQueued));
-end
-
-%if(handles.video.on && isfield(handles.video,'M') && (~isempty(handles.video.M)))
-nsave=sum(handles.video.save);
-if(handles.video.on && (nsave>0) && ...
-      isfield(handles.video,'M') && ~isempty(handles.video.M) && (handles.video.M{1+handles.video.curr}.Data(4)>0))
-  set(handles.VideoFramesAvailable,'string',num2str(handles.video.M{1+handles.video.curr}.Data(1)));
-  set(handles.VideoFPSAchieved,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(2))));
-  set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.M{1+handles.video.curr}.Data(3))));
-  if(nsave>1)
-    imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
-        num2str(handles.video.curr),[num2str(handles.video.M{1+handles.video.curr}.Data(4)) handles.video.extension]));
-  else
-    imread(fullfile(handles.video.directory{handles.video.curr},[handles.filename 'v'],...
-        [num2str(handles.video.M{1+handles.video.curr}.Data(4)) handles.video.extension]));
-  end
-  image(ans,'parent',handles.video.ha);
-  axis(handles.video.ha,'off');
-  axis(handles.video.ha,'image');
 end
 
 drawnow('expose')
@@ -850,7 +816,6 @@ if(~handles.running)
   set(handles.VideoROI,'enable','off');
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
-  set(handles.VideoPreview,'enable','off');
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
@@ -876,52 +841,9 @@ if(~handles.running)
         @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
   end
 
-  nsave=sum(handles.video.save);
-  if(handles.video.on && (nsave>0))
-    handles.video.mfile = tempname;
-    handles.video.hf = figure('menubar','none','position',handles.video.ROI(handles.video.curr,:));
-    handles.video.ha = subplot('position',[0 0 1 1],'parent',handles.video.hf);
-    colormap(handles.video.ha,gray(256));
-    fid=fopen(handles.video.mfile,'w');  fwrite(fid,zeros(1,1+4*handles.video.n),'double');  fclose(fid);
-    handles.video.M{1} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', 'Repeat', 1);
-    for i=1:handles.video.n
-      if(~handles.video.save(i))  continue;  end
-      if(nsave==1)
-        mkdir(fullfile(handles.video.directory{i},[handles.filename 'v']));
-      else
-        mkdir(fullfile(handles.video.directory{i},[handles.filename 'v'],num2str(i)));
-      end
-      handles.video.M{1+i} = memmapfile(handles.video.mfile, 'Writable', true, 'Format', 'double', ...
-          'Repeat', 4, 'Offset', 8*(1+4*(i-1)));
-    end
-    switch(handles.video.fileformatlist{handles.video.fileformatvalue})
-      case 'JPG'
-        handles.video.quality={'quality' handles.video.fileformatquality};
-        handles.video.extension='.jpg';
-      case 'JP2'
-        handles.video.quality={'compressionratio' handles.video.fileformatquality};
-        handles.video.extension='.jp2';
-    end
-    if(exist('matlabpool')==2)
-      handles.video.thread=batch(@video_thread,0,...
-          {handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
-           handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
-           handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
-           handles.video.counter,...
-           handles.video.fileformatlist{handles.video.fileformatvalue},handles.video.quality,handles.video.extension},...
-          'matlabpool',handles.video.pool);
-      disp('waiting for batch job to start...');
-      while handles.video.M{1}.Data(1)==0  pause(1);  end
-      disp('batch job has started');
-    else
-      video_thread(...
-          handles.video.n, handles.video.mfile, handles.video.adaptor, handles.video.deviceid,...
-          handles.video.formatlist, handles.video.formatvalue, handles.video.ROI,...
-          handles.video.save, handles.video.directory, [handles.filename 'v'], handles.video.pool, ...
-          handles.video.counter,...
-          handles.video.fileformatlist{handles.video.fileformatvalue},handles.video.quality,handles.video.extension);
-      while handles.video.M{1}.Data(1)==0  pause(1);  end
-    end
+  if handles.video.on 
+    handles=video_thread(handles);
+    preview(handles.video.vi{handles.video.curr});
   end
 
   guidata(hObject, handles);
@@ -962,30 +884,24 @@ elseif(handles.running)
     end
   end
 
-  if(handles.video.on && (sum(handles.video.save)>0))
-    handles.video.M{1}.Data(1)=0;
-    while(sum(cellfun(@(x) x.Data(1),handles.video.M(2:end)))>0)  pause(1);  end
-    if(exist('matlabpool')==2)
-      wait(handles.video.thread);
-  %    diary(handles.video.thread)
-      delete(handles.video.thread);
+  if handles.video.on 
+    stoppreview(handles.video.vi{handles.video.curr});
+    stop([handles.video.vi{:}]);
+
+    if (sum(handles.video.save)>0)
+        flag=true;
+        while flag
+          flag=false;
+          for i=1:handles.video.n
+            if(~handles.video.save(i))  continue;  end
+            if(get(handles.video.vi{i},'FramesAvailable')>0)
+              flag=true;
+              video_callback([],[],handles,i)
+            end
+          end
+        end
     end
-    handles.video.M=[];
-    close(handles.video.hf);
-    delete(handles.video.mfile);   % throws error b/c M is not released
-    %while(handles.video.input.DiskLoggerFrameCount~=handles.video.input.FramesAcquired)
-    %  pause(1);
-    %end
-    %close(handles.vi.DiskLogger);
-%    vw=VideoWriter(fullfile(handles.video.directory,[handles.filename '.avi']), ...
-%        handles.video.compression);
-%    open(vw);
-%    list=dir(fullfile(handles.video.directory,[handles.filename '*.jpg']));
-%    for i=1:length(list)
-%      imread(fullfile(handles.video.directory,list(i).name),'jpg');
-%      writeVideo(vw,ans);
-%    end
-%    close(vw);
+    delete([handles.video.vi{:}]);
   end
 
   if(isvalid(handles.timer.update_display))
@@ -1710,41 +1626,6 @@ function VideoChannel_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% ---
-function set_videopreview(handles)
-
-persistent vi
-
-if(handles.video.preview)
-  set(handles.StartStop,'enable','off');  drawnow;
-  vi=videoinput(handles.video.adaptor{handles.video.curr},handles.video.deviceid(handles.video.curr),...
-      handles.video.formatlist{handles.video.curr}{handles.video.formatvalue(handles.video.curr)});
-  if(~isempty(handles.video.ROI))
-    set(vi,'ROIPosition',handles.video.ROI(handles.video.curr,:));
-  end
-  preview(vi);
-else
-  if(~isempty(vi) && isvalid(vi))
-    stoppreview(vi);
-    delete(vi);
-  end
-  set(handles.StartStop,'enable','on');  drawnow;
-end
-
-
-% --- Executes on button press in VideoPreview.
-function VideoPreview_Callback(hObject, eventdata, handles)
-% hObject    handle to VideoPreview (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of VideoPreview
-
-handles.video.preview=~handles.video.preview;
-set_videopreview(handles);
-guidata(hObject, handles);
 
 
 % --- Executes on button press in VideoTrigger.
