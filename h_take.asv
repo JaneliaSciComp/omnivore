@@ -100,7 +100,7 @@ if(handles.hygrometer.on)
     set(handles.HygrometerDirectory,'enable','off');
     set(handles.HygrometerSave,'value',0);
   end
-  set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
+  set(handles.VerboseLevel,'enable','on');
 else
   set(handles.HygrometerSave,'enable','off');
   set(handles.HygrometerPeriod,'enable','off');
@@ -195,11 +195,6 @@ function system_monitor_callback(obj,src,handles)
 
 persistent last_cpu
 
-if handles.verbose>1
-  disp('entering hygrometer system_monitor_callback');
-  tic
-end
-
 next_cpu=handles.system_monitor.object.cpuTimes();
 mem=handles.system_monitor.object.physical();
 if(~isempty(last_cpu))
@@ -209,10 +204,6 @@ if(~isempty(last_cpu))
   drawnow
 end
 last_cpu=next_cpu;
-
-if handles.verbose>1
-  disp(['exiting hygrometer system_monitor_callback:    ' num2str(toc) 's']);
-end
 
 
 % ---
@@ -319,7 +310,7 @@ end
 drawnow('expose')
 
 if handles.verbose>1
-  disp(['exiting hygrometer display_callback:    ' num2str(toc) 's']);
+  disp(['exiting  display_callback:    ' num2str(toc) 's']);
 end
 
 
