@@ -47,7 +47,6 @@ end
 % ---
 function handles=initialize(handles)
 
-handles.hygrometer.on=0;
 handles.hygrometer.save=0;
 handles.hygrometer.directory='';
 handles.hygrometer.object=[];
@@ -68,7 +67,6 @@ function handles=load_configuration_file(filename,handles)
 
 handles_saved=load(filename);
 handles_saved=handles_saved.handles;
-handles.hygrometer.on=handles_saved.hygrometer.on;
 handles.hygrometer.save=handles_saved.hygrometer.save;
 handles.hygrometer.directory=handles_saved.hygrometer.directory;
 handles.hygrometer.object=handles_saved.hygrometer.object;
@@ -87,39 +85,27 @@ handles.verbose=handles_saved.verbose;
 % ---
 function update_figure(handles)
 
-set(handles.HygrometerOnOff,'value',handles.hygrometer.on,'enable','on');
-if(handles.hygrometer.on)
-  set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
-  set(handles.HygrometerPeriod,'string',num2str(handles.hygrometer.period));
-  set(handles.HygrometerSave,'enable','on');
-  set(handles.HygrometerPeriod,'enable','on');
-  if(handles.hygrometer.save)
-    set(handles.HygrometerDirectory,'enable','on');
-    set(handles.HygrometerSave,'value',1);
-  else
-    set(handles.HygrometerDirectory,'enable','off');
-    set(handles.HygrometerSave,'value',0);
-  end
-  set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
+set(handles.HygrometerDirectory,'string',handles.hygrometer.directory);
+set(handles.HygrometerPeriod,'string',num2str(handles.hygrometer.period));
+set(handles.HygrometerSave,'enable','on');
+set(handles.HygrometerPeriod,'enable','on');
+if(handles.hygrometer.save)
+set(handles.HygrometerDirectory,'enable','on');
+set(handles.HygrometerSave,'value',1);
 else
-  set(handles.HygrometerSave,'enable','off');
-  set(handles.HygrometerPeriod,'enable','off');
+set(handles.HygrometerDirectory,'enable','off');
+set(handles.HygrometerSave,'value',0);
 end
+set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
 
 
 % ---
 function handles=configure_hygrometer(handles)
 
-if(handles.hygrometer.on)
-  handles.hygrometer.object=hygrometer(handles.daqdevices, handles.portout, handles.portin, ...
-      handles.hygrometer.clock, handles.hygrometer.lineout, handles.hygrometer.linein);
-  [T RH timeT timeRH]=handles.hygrometer.object.take;
-  set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
-else
-  if(~isempty(handles.hygrometer.object))
-    handles.hygrometer.object.close;
-  end
-end
+handles.hygrometer.object=hygrometer(handles.daqdevices, handles.portout, handles.portin, ...
+  handles.hygrometer.clock, handles.hygrometer.lineout, handles.hygrometer.linein);
+[T RH timeT timeRH]=handles.hygrometer.object.take;
+set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
 
   
 % --- Executes just before av_take is made visible.
@@ -161,12 +147,10 @@ if(isfield(handles,'daqdevices'))
 
   handles.hygrometer.period=max(handles.hygrometer.period,10);
   handles=configure_hygrometer(handles);
-else
-  set(handles.HygrometerOnOff,'enable','off');
 end
 
 set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
-delete(timerfind);
+%delete(timerfind);
 
 % javaaddpath('javasysmon-0.3.4.jar');
 % import com.jezhumble.javasysmon.JavaSysMon.*
@@ -336,21 +320,18 @@ if(~handles.running)
   
   handles.running=1;
   set(handles.StartStop,'string','stop','backgroundColor',[1 0 0]);
-  set(handles.HygrometerOnOff,'enable','off');
   set(handles.HygrometerSave,'enable','off');
   set(handles.HygrometerPeriod,'enable','off');
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
-  if(handles.hygrometer.on)
-    handles.hygrometer.fid=nan;
-    if(handles.hygrometer.save)
-      handles.hygrometer.fid=fopen(fullfile(handles.hygrometer.directory,[handles.filename '.hyg']),'w');
-    end
-    handles.hygrometer.timer=timer('Name','hygrometer','Period',handles.hygrometer.period,'ExecutionMode','fixedRate',...
-        'TimerFcn',@(hObject,eventdata)hygrometer_callback(hObject,eventdata,handles));
-    start(handles.hygrometer.timer);
+  handles.hygrometer.fid=nan;
+  if(handles.hygrometer.save)
+    handles.hygrometer.fid=fopen(fullfile(handles.hygrometer.directory,[handles.filename '.hyg']),'w');
   end
+  handles.hygrometer.timer=timer('Name','hygrometer','Period',handles.hygrometer.period,'ExecutionMode','fixedRate',...
+      'TimerFcn',@(hObject,eventdata)hygrometer_callback(hObject,eventdata,handles));
+  start(handles.hygrometer.timer);
 
   guidata(hObject, handles);
 
@@ -370,12 +351,10 @@ if(~handles.running)
 %   end
 
 elseif(handles.running)
-  if(handles.hygrometer.on)
-    stop(handles.hygrometer.timer);
-    delete(handles.hygrometer.timer);
-    if(handles.hygrometer.save)
-      fclose(handles.hygrometer.fid);
-    end
+  stop(handles.hygrometer.timer);
+  delete(handles.hygrometer.timer);
+  if(handles.hygrometer.save)
+    fclose(handles.hygrometer.fid);
   end
 
   if(isvalid(handles.timer.update_display))
@@ -477,20 +456,7 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 delete(hObject);
 
 
-% --- Executes on button press in HygrometerOnOff.
-function HygrometerOnOff_Callback(hObject, eventdata, handles)
-% hObject    handle to HygrometerOnOff (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of HygrometerOnOff
-
-handles.hygrometer.on=~handles.hygrometer.on;
-handles=configure_hygrometer(handles);
-update_figure(handles);
-guidata(hObject, handles);
-
-
+% --- Executes on button press in HygrometerPeriod.
 function HygrometerPeriod_Callback(hObject, eventdata, handles)
 % hObject    handle to HygrometerPeriod (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB

@@ -453,7 +453,7 @@ else
 end
 
 set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
-delete(timerfind);
+%delete(timerfind);
 
 % javaaddpath('javasysmon-0.3.4.jar');
 % import com.jezhumble.javasysmon.JavaSysMon.*
