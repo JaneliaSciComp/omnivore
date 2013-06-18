@@ -272,6 +272,7 @@ end
 
 set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
 set(handles.VideoParams,'enable','off');
+set(handles.VideoHistogram,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
@@ -861,6 +862,7 @@ if(~handles.running)
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoParams,'enable','on');
+  set(handles.VideoHistogram,'enable','on');
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
@@ -888,8 +890,15 @@ if(~handles.running)
 
   if handles.video.on 
     handles=video_thread(handles);
+
     update_video_params(handles);
-    preview(handles.video.vi{handles.video.curr});
+
+    roiPos = get(handles.video.vi{handles.video.curr}, 'ROIPosition');
+    nBands = get(handles.video.vi{handles.video.curr}, 'NumberOfBands');
+    handles.video.preview.fig=figure('units','pixels','position',roiPos,'numbertitle','off','menubar','none');
+    axes('position',[0 0 1 1]);
+    handles.video.preview.im = image( zeros(roiPos(4), roiPos(3), nBands) );
+    preview(handles.video.vi{handles.video.curr},handles.video.preview.im);
   end
 
   guidata(hObject, handles);
@@ -932,6 +941,7 @@ elseif(handles.running)
 
   if handles.video.on 
     stoppreview(handles.video.vi{handles.video.curr});
+    delete(handles.video.preview.fig);
     stop([handles.video.vi{:}]);
 
     if (sum(handles.video.save)>0)
@@ -1686,6 +1696,58 @@ function VideoTrigger_Callback(hObject, eventdata, handles)
 handles.video.counter=get(handles.VideoTrigger,'value');
 handles=configure_video_channels(handles);
 update_figure(handles);
+guidata(hObject, handles);
+
+
+% --- Executes on button press in VideoHistogram.
+function VideoHistogram_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoHistogram (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of VideoHistogram
+
+figure;
+im = get(handles.video.preview.im,'cdata');
+if handles.video.vi{handles.video.curr}.NumberOfBands == 1
+    n = hist(im(:),0:255);
+    for j = 1:256
+        h=patch([-.5 .5 .5 -.5]+j, [0 0 1 1]*n(j), 'b','edgecolor','none');
+        if j==1
+            set(h,'xdata',[-5 .5 .5 -5],'facecolor','r');
+        end
+        if j==256
+            set(h,'xdata',[-.5 5 5 -.5]+255,'facecolor','r');
+        end
+    end
+    set(gca,'ylim',[0 1.05*max(n)]);
+else %if RGB image
+    maxval = 0;
+    c = 'rgb';
+    for i = 1:3
+        temp = im(:,:,i);
+        n = hist(temp(:),0:255);
+        for j = 1:256
+            h=patch([-.5 .5 .5 -.5]+j, [0 0 1 1]*n(j), c(i),'edgecolor','none');
+            if j==1
+                set(h,'xdata',[-5 .5 .5 -5],'facecolor',modc);
+            end
+            if j==256
+                set(h,'xdata',[-.5 5 5 -.5]+255,'facecolor',modc);
+            end
+        end
+        maxval = max([maxval,max(n)]);
+        switch i
+            case 1; modc = [1 .8 .8];
+            case 2; modc = [.8 1 .8];
+            case 3; modc = [.8 .8 1];
+        end
+        set(gca,'nextplot','add')
+    end
+    set(gca,'ylim',[0 1.05*maxval]);
+end
+set(gca,'xtick',[],'ytick',[],'xscale','linear','xlim',[-5 260],'box','on');
+
 guidata(hObject, handles);
 
 
