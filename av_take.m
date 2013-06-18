@@ -155,6 +155,49 @@ handles.verbose=handles_saved.verbose;
 
 
 % ---
+function set_video_param(obj,event,handles)
+
+data=get(handles.VideoParams,'data');
+row=event.Indices(1);
+set(handles.video.vi{handles.video.curr}.Source,data{row,1},data{row,2})
+
+
+% ---
+function update_video_params(handles)
+ss = getselectedsource(handles.video.vi{handles.video.curr});
+a = get(ss);
+c = fieldnames(a);
+    
+data={}; j = 1;
+%ignore properties: parent, selected, tag, type, frameTimeout,
+for i = 1:length(c)
+    if strcmpi(c{i},'parent')|strcmpi(c{i},'selected')|strcmpi(c{i},'tag')|strcmpi(c{i},'type')|strcmpi(c{i},'NormalizedBytesPerPacket')|strcmpi(c{i},'FrameTimeout')
+        continue
+    end
+    data{j,1} = c{i}; data{j,2} = eval(['a.',c{i}]); 
+    
+    pinfo=propinfo(ss,c{i});
+    
+    switch pinfo.Constraint
+        case 'none'
+            data{j,3} = pinfo.ConstraintValue;
+        case 'bounded'
+            tmp =  pinfo.ConstraintValue;
+            data{j,3} = ['  [',num2str(tmp(1)),' ',num2str(tmp(2)),']'];
+        case 'enum'
+            str = '';
+            for i = 1:length(pinfo.ConstraintValue)
+                str = [str,', ',pinfo.ConstraintValue{i}];
+            end
+            str(1:2) = ' ';
+            data{j,3} = str;
+    end
+    j = j+1;
+end
+set(handles.VideoParams,'data',data);
+
+
+% ---
 function update_figure(handles)
 
 set(handles.AnalogOutOnOff,'value',handles.analog.out.on,'enable','on');
@@ -228,6 +271,7 @@ else
 end
 
 set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
+set(handles.VideoParams,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
@@ -816,6 +860,7 @@ if(~handles.running)
   set(handles.VideoROI,'enable','off');
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
+  set(handles.VideoParams,'enable','on');
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
@@ -843,6 +888,7 @@ if(~handles.running)
 
   if handles.video.on 
     handles=video_thread(handles);
+    update_video_params(handles);
     preview(handles.video.vi{handles.video.curr});
   end
 
@@ -1611,6 +1657,7 @@ function VideoChannel_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoChannel
 
 handles.video.curr=get(handles.VideoChannel,'value');
+update_video_params(handles);
 update_figure(handles);
 guidata(hObject, handles);
 
