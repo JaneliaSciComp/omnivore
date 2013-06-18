@@ -68,6 +68,7 @@ handles.analog.in.fs=nan;
 handles.analog.in.style=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
+handles.analog.in.fileformat=1;
 handles.video.on=0;
 handles.video.maxn=nan;
 handles.video.n=nan;
@@ -126,6 +127,7 @@ handles.analog.in.fs=handles_saved.analog.in.fs;
 handles.analog.in.style=handles_saved.analog.in.style;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
+handles.analog.in.fileformat=handles_saved.analog.in.fileformat;
 handles.video.on=handles_saved.video.on;
 handles.video.maxn=handles_saved.video.maxn;
 handles.video.n=handles_saved.video.n;
@@ -241,6 +243,7 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInChannel,'value',handles.analog.in.curr);
   set(handles.AnalogInRange,'value',handles.analog.in.range);
   set(handles.AnalogInTerminalConfiguration,'value',handles.analog.in.terminal_configuration);
+  set(handles.AnalogInFileFormat,'value',handles.analog.in.fileformat);
   set(handles.AnalogInDirectory,'string',handles.analog.in.directory);
   set(handles.AnalogInFs,'string',num2str(handles.analog.in.fs));
   if(handles.analog.in.record)
@@ -642,7 +645,14 @@ if handles.verbose>0
 end
 
 if(handles.analog.in.record)
-  fwrite(handles.analog.in.fid,evt.Data','double');
+    switch(handles.analog.in.fileformat)
+      case 1
+        fwrite(handles.analog.in.fid,evt.Data','double');
+      case 2
+        d=bsxfun(@minus,evt.Data,handles.analog.in.offset);
+        d=bsxfun(@rdivide,d,handles.analog.in.step);
+        fwrite(handles.analog.in.fid,int16(d'),'int16');
+    end
 end
 
 if(~isempty(last_timestamp))
@@ -658,7 +668,10 @@ plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
 %axis(handles.AnalogInPlot,'off');
 
 if handles.verbose>0
-  disp(['exiting  analog_in_callback:  ' num2str(toc) 's']);
+  disp(['exiting  analog_in_callback:  ' ...
+        num2str(toc/(length(evt.Data)/handles.analog.in.fs),3) 'x real time is ' ...
+        num2str(toc,3) 's to process ' ...
+        num2str(length(evt.Data)/handles.analog.in.fs,3) 's of data']);
 end
 
 
@@ -668,6 +681,10 @@ function video_callback(src,evt,handles,idx)
 persistent time0
 
 tic;
+
+if handles.verbose>0
+  disp('entering video_callback');
+end
 
 try
   [data time metadata]=getdata(handles.video.vi{idx},handles.video.pool);
@@ -700,6 +717,13 @@ if handles.video.curr==idx
   time0=time(end);
   set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.pool/toc)));
   set(handles.VideoFramesAvailable,'string',num2str(get(handles.video.vi{idx},'FramesAvailable')));
+end
+
+if handles.verbose>0
+  disp(['exiting  video_callback:  ' ...
+        num2str(toc/(size(data,4)/handles.video.FPS),3) 'x real time is ' ...
+        num2str(toc,3) 's to process ' ...
+        num2str(size(data,4)/handles.video.FPS,3) 's of data']);
 end
 
 
@@ -866,6 +890,43 @@ if(~handles.running)
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
+  if(handles.analog.in.on)
+    clear analog_in_callback
+    handles.analog.in.fid = nan;
+    if(handles.analog.in.record)
+      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
+      switch(handles.analog.in.fileformat)
+        case 1  % version#=1, sample rate, nchan, (doubles)
+          fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
+        case 2  % version#=2, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
+          fwrite(handles.analog.in.fid,[2 handles.analog.in.fs handles.analog.in.n],'double');
+          if(handles.analog.out.on)
+            analog_out_callback(hObject, eventdata, handles.figure1);
+          end
+          handles.analog.in.step=[];
+          handles.analog.in.offset=[];
+          data=handles.analog.session.startForeground;
+          for i=1:size(data,2)
+            handles.analog.in.step(i)=min(diff([nan; unique(data(:,i))]));
+            handles.analog.in.offset(i)=mean(mod(data(:,i),handles.analog.in.step(i)));
+            fwrite(handles.analog.in.fid,[handles.analog.in.step(i) handles.analog.in.offset(i)],'double');
+          end
+          questdlg({['steps: ' num2str(handles.analog.in.step)],['offsets: ' num2str(handles.analog.in.offset)]},...
+              'double to int16 conversion','proceed','cancel','proceed');
+          if(strcmp(ans,'cancel'))
+              fclose(handles.analog.in.fid);
+              delete(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']));
+              set(handles.StartStop,'string','start','backgroundColor',[0 1 0],'enable','on');
+              update_figure(handles);
+              handles.running=0;
+              return;
+          end
+      end
+    end
+    handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
+        @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
+  end
+
   if(handles.analog.out.on)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
     guidata(hObject, handles);
@@ -874,18 +935,6 @@ if(~handles.running)
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.listenerAnalogOut=handles.analog.session.addlistener('DataRequired',...
         @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
-  end
-
-  if(handles.analog.in.on)
-    clear analog_in_callback
-    handles.analog.in.fid = nan;
-    if(handles.analog.in.record)
-      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
-      % version#, sample rate, nchan
-      fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
-    end
-    handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
-        @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
   end
 
   if handles.video.on 
@@ -1441,6 +1490,19 @@ else
 end
 
 guidata(hObject,handles);
+
+
+% --- Executes on selection change in AnalogInFileFormat.
+function AnalogInFileFormat_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInFileFormat (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns AnalogInFileFormat contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from AnalogInFileFormat
+
+handles.analog.in.fileformat=get(hObject,'value');
+guidata(hObject, handles);
 
 
 % --- Executes on selection change in AnalogInRange.
