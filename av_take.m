@@ -642,7 +642,13 @@ if handles.verbose>0
 end
 
 if(handles.analog.in.record)
-  fwrite(handles.analog.in.fid,evt.Data','double');
+    if(0)
+      fwrite(handles.analog.in.fid,evt.Data','double');
+    else
+      d=bsxfun(@minus,evt.Data,handles.analog.in.offset);
+      d=bsxfun(@rdivide,d,handles.analog.in.step);
+      fwrite(handles.analog.in.fid,int16(d'),'int16');
+    end
 end
 
 if(~isempty(last_timestamp))
@@ -866,6 +872,34 @@ if(~handles.running)
   set(handles.VerboseLevel,'enable','off');
   drawnow('expose');
   
+  if(handles.analog.in.on)
+    clear analog_in_callback
+    handles.analog.in.fid = nan;
+    if(handles.analog.in.record)
+      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
+      if(0) % version#=1, sample rate, nchan, (doubles)
+          fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
+      else  % version#=2, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
+          fwrite(handles.analog.in.fid,[2 handles.analog.in.fs handles.analog.in.n],'double');
+          if(handles.analog.out.on)
+            analog_out_callback(hObject, eventdata, handles.figure1);
+          end
+          handles.analog.in.step=[];
+          handles.analog.in.offset=[];
+          data=handles.analog.session.startForeground;
+          for i=1:size(data,2)
+            handles.analog.in.step(i)=min(diff(unique(data(:,i))));
+            handles.analog.in.offset(i)=mean(mod(data(:,i),handles.analog.in.step(i)));
+            fwrite(handles.analog.in.fid,[handles.analog.in.step(i) handles.analog.in.offset(i)],'double');
+          end
+          handles.analog.in.step
+          handles.analog.in.offset
+      end
+    end
+    handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
+        @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
+  end
+
   if(handles.analog.out.on)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
     guidata(hObject, handles);
@@ -874,18 +908,6 @@ if(~handles.running)
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.listenerAnalogOut=handles.analog.session.addlistener('DataRequired',...
         @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
-  end
-
-  if(handles.analog.in.on)
-    clear analog_in_callback
-    handles.analog.in.fid = nan;
-    if(handles.analog.in.record)
-      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
-      % version#, sample rate, nchan
-      fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
-    end
-    handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
-        @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
   end
 
   if handles.video.on 
