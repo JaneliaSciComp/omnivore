@@ -256,6 +256,9 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInStyle,'value',handles.analog.in.style);
   set(handles.AnalogInRecord,'enable','on');
   set(handles.AnalogInDirectory,'enable','on');
+  set(handles.AnalogInTerminalConfiguration,'enable','on');
+  set(handles.AnalogInRange,'enable','on');
+  set(handles.AnalogInFileFormat,'enable','on');
   set(handles.AnalogInNumChannels,'enable','on');
   set(handles.AnalogInChannel,'enable','on');
   set(handles.AnalogInStyle,'enable','on');
@@ -265,6 +268,9 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
 else
   set(handles.AnalogInRecord,'enable','off');
   set(handles.AnalogInDirectory,'enable','off');
+  set(handles.AnalogInTerminalConfiguration,'enable','off');
+  set(handles.AnalogInRange,'enable','off');
+  set(handles.AnalogInFileFormat,'enable','off');
   set(handles.AnalogInNumChannels,'enable','off');
   set(handles.AnalogInChannel,'enable','off');
   set(handles.AnalogInStyle,'enable','off');
@@ -305,6 +311,9 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoNumChannels,'enable','on');
   set(handles.VideoChannel,'enable','on');
   set(handles.VideoFormat,'enable','on');
+  set(handles.VideoTrigger,'enable','on');
+  set(handles.VideoFileFormat,'enable','on');
+  set(handles.VideoFileFormatQuality,'enable','on');
 else
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFPS,'enable','off');
@@ -312,6 +321,9 @@ else
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoChannel,'enable','off');
   set(handles.VideoFormat,'enable','off');
+  set(handles.VideoTrigger,'enable','off');
+  set(handles.VideoFileFormat,'enable','off');
+  set(handles.VideoFileFormatQuality,'enable','off');
 end
 
 set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
@@ -488,11 +500,11 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
-    handles.video.pool=1;
-    if(exist('matlabpool')==2)
-      c=parcluster;
-      handles.video.pool=c.NumWorkers-1;
-    end
+  end
+  handles.video.pool=10;
+  if(exist('matlabpool')==2)
+    c=parcluster;
+    handles.video.pool=10*c.NumWorkers;
   end
   handles=configure_video_channels(handles);
 else
@@ -596,6 +608,7 @@ if handles.verbose>0
   tic
 end
 
+out=zeros(max(1024,max(handles.analog.out.fs)),handles.analog.out.n); 
 for i=1:handles.analog.out.n
   if(handles.analog.out.play(i))
     tmp=handles.analog.out.idx(i)+handles.analog.out.fs(i)-1;
@@ -606,8 +619,6 @@ for i=1:handles.analog.out.n
     if(idx2==0)
       handles.analog.out.idx(i)=idx+1;
     end
-  else
-    out(:,i)=zeros(max(1024,max(handles.analog.out.fs)),1); 
   end
   if(i==handles.analog.out.curr)
     switch(handles.analog.out.style)
@@ -628,7 +639,10 @@ handles.analog.session.queueOutputData(out);
 guidata(hObject, handles);
 
 if handles.verbose>0
-  disp(['exiting  analog_out_callback: ' num2str(toc) 's']);
+  disp(['exiting  analog_out_callback: ' ...
+        num2str(toc/(length(out)/handles.analog.out.fs(1)),3) 'x real time is ' ...
+        num2str(toc,3) 's to process ' ...
+        num2str(length(out)/handles.analog.out.fs(1),3) 's of data']);
 end
 
 
@@ -701,6 +715,7 @@ if(handles.video.save)
   quality=handles.video.quality;
   %for i=1:size(data,4)
   parfor i=1:size(data,4)
+    %extension='.tif';  format='tif';  quality={};
     if(flag==1)
       tmp=fullfile(directory, filename, [num2str(metadata(i).FrameNumber) extension]);
     else
@@ -879,12 +894,16 @@ if(~handles.running)
   set(handles.AnalogInFs,'enable','off');
   set(handles.AnalogInRange,'enable','off');
   set(handles.AnalogInTerminalConfiguration,'enable','off');
+  set(handles.AnalogInFileFormat,'enable','off');
   set(handles.VideoOnOff,'enable','off');
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFormat,'enable','off');
   set(handles.VideoROI,'enable','off');
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
+  set(handles.VideoTrigger,'enable','off');
+  set(handles.VideoFileFormat,'enable','off');
+  set(handles.VideoFileFormatQuality,'enable','off');
   set(handles.VideoParams,'enable','on');
   set(handles.VideoHistogram,'enable','on');
   set(handles.VerboseLevel,'enable','off');
@@ -932,7 +951,6 @@ if(~handles.running)
     guidata(hObject, handles);
     for(i=1:5)  analog_out_callback(hObject, eventdata, handles.figure1);  end
     handles=guidata(hObject);
-    handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.listenerAnalogOut=handles.analog.session.addlistener('DataRequired',...
         @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
   end
@@ -953,6 +971,8 @@ if(~handles.running)
   guidata(hObject, handles);
 
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+    handles.analog.session.NotifyWhenDataAvailableExceeds=handles.analog.in.fs;
+    handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.analog.session.IsContinuous=true;
     handles.analog.session.startBackground;
   end
