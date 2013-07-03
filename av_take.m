@@ -196,6 +196,14 @@ for i = 1:length(c)
     end
     j = j+1;
 end
+
+% hack to turn >1 numbers into string
+tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
+for i=1:length(tmp)
+  foo=data(tmp);
+  data{tmp}=num2str([foo{1}]);
+end
+
 set(handles.VideoParams,'data',data);
 
 
@@ -286,7 +294,9 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
   set(handles.VideoNumChannels,'string',handles.video.n);
-  set(handles.VideoChannel,'string',[1:handles.video.n]);
+  set(handles.VideoChannel,'string',...
+      cellfun(@(n,s) [num2str(n) ' ' s], num2cell(1:handles.video.n),...
+      handles.video.devicename(1:handles.video.n),'uniformoutput',false));
   set(handles.VideoChannel,'value',handles.video.curr);
   set(handles.VideoDirectory,'string',handles.video.directory(handles.video.curr));
   set(handles.VideoFormat,'string',handles.video.formatlist{handles.video.curr},...
@@ -957,15 +967,7 @@ if(~handles.running)
 
   if handles.video.on 
     handles=video_thread(handles);
-
-    update_video_params(handles);
-
-    roiPos = get(handles.video.vi{handles.video.curr}, 'ROIPosition');
-    nBands = get(handles.video.vi{handles.video.curr}, 'NumberOfBands');
-    handles.video.preview.fig=figure('units','pixels','position',roiPos,'numbertitle','off','menubar','none');
-    axes('position',[0 0 1 1]);
-    handles.video.preview.im = image( zeros(roiPos(4), roiPos(3), nBands) );
-    preview(handles.video.vi{handles.video.curr},handles.video.preview.im);
+    handles=video_setup_preview(handles)
   end
 
   guidata(hObject, handles);
@@ -1009,8 +1011,7 @@ elseif(handles.running)
   end
 
   if handles.video.on 
-    stoppreview(handles.video.vi{handles.video.curr});
-    delete(handles.video.preview.fig);
+    handles=video_takedown_preview(handles)
     stop([handles.video.vi{:}]);
 
     if (sum(handles.video.save)>0)
@@ -1739,6 +1740,28 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+% ---
+function handles=video_setup_preview(handles)
+
+update_video_params(handles);
+
+roiPos = get(handles.video.vi{handles.video.curr}, 'ROIPosition');
+nBands = get(handles.video.vi{handles.video.curr}, 'NumberOfBands');
+handles.video.preview.fig=figure('units','pixels','position',roiPos,'numbertitle','off','menubar','none');
+handles.video.preview.ax=axes('position',[0 0 1 1],'parent',handles.video.preview.fig);
+handles.video.preview.im = image( zeros(roiPos(4), roiPos(3), nBands) ,...
+    'parent',handles.video.preview.ax);
+preview(handles.video.vi{handles.video.curr},handles.video.preview.im);
+
+    
+% ---
+function handles=video_takedown_preview(handles)
+
+stoppreview(handles.video.vi{handles.video.curr});
+closepreview(handles.video.vi{handles.video.curr});
+delete(handles.video.preview.fig);
+
+  
 % --- Executes on selection change in VideoChannel.
 function VideoChannel_Callback(hObject, eventdata, handles)
 % hObject    handle to VideoChannel (see GCBO)
@@ -1748,8 +1771,13 @@ function VideoChannel_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns VideoChannel contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from VideoChannel
 
+if handles.running
+  handles=video_takedown_preview(handles)
+end
 handles.video.curr=get(handles.VideoChannel,'value');
-update_video_params(handles);
+if handles.running
+  handles=video_setup_preview(handles)
+end
 update_figure(handles);
 guidata(hObject, handles);
 
