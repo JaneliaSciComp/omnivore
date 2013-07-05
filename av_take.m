@@ -157,67 +157,6 @@ handles.verbose=handles_saved.verbose;
 
 
 % ---
-function set_video_param(obj,event,handles)
-
-data=get(handles.VideoParams,'data');
-row=event.Indices(1);
-set(handles.video.vi{handles.video.curr}.Source,data{row,1},data{row,2})
-
-
-% ---
-function data = update_video_params_guts()
-ss = getselectedsource(vi);
-a = get(ss);
-c = fieldnames(a);
-    
-data={}; j = 1;
-%ignore properties: parent, selected, tag, type, frameTimeout,
-for i = 1:length(c)
-    if strcmpi(c{i},'parent')|strcmpi(c{i},'selected')|strcmpi(c{i},'tag')|...
-       strcmpi(c{i},'type')|strcmpi(c{i},'NormalizedBytesPerPacket')|...
-       strcmpi(c{i},'FrameTimeout')
-        continue
-    end
-    data{j,1} = c{i}; data{j,2} = eval(['a.',c{i}]); 
-    
-    pinfo=propinfo(ss,c{i});
-    
-    switch pinfo.Constraint
-        case 'none'
-            data{j,3} = pinfo.ConstraintValue;
-        case 'bounded'
-            tmp =  pinfo.ConstraintValue;
-            data{j,3} = ['  [',num2str(tmp(1)),' ',num2str(tmp(2)),']'];
-        case 'enum'
-            str = '';
-            for i = 1:length(pinfo.ConstraintValue)
-                str = [str,', ',pinfo.ConstraintValue{i}];
-            end
-            str(1:2) = ' ';
-            data{j,3} = str;
-    end
-    j = j+1;
-end
-
-
-% ---
-function update_video_params(handles)
-return
-invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'data=update_video_params_guts()');
-data = handles.video.actx(handles.video.curr).GetWorkspaceData('data','base')
-
-% a hack to turn >1 numbers into string
-tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
-for i=1:length(tmp)
-  foo=data(tmp);
-  data{tmp}=num2str([foo{1}]);
-end
-
-set(handles.VideoParams,'data',data);
-
-
-% ---
 function update_figure(handles)
 
 set(handles.AnalogOutOnOff,'value',handles.analog.out.on,'enable','on');
@@ -299,8 +238,12 @@ end
 
 set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
 set(handles.VideoParams,'enable','off');
-set(handles.VideoHistogram,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
+  if handles.running
+    set(handles.VideoHistogram,'enable','on');
+  else
+    set(handles.VideoHistogram,'enable','off');
+  end
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
   set(handles.VideoNumChannels,'string',handles.video.n);
@@ -325,6 +268,7 @@ if(handles.video.on && (handles.video.maxn>0))
       'value',handles.video.fileformatvalue);
   set(handles.VideoFileFormatQuality,'string',handles.video.fileformatquality);
   set_videoquality_tooltip_str(handles);
+  set(handles.VideoParams,'enable','on');
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
   set(handles.VideoROI,'enable','on');
@@ -393,6 +337,45 @@ if(handles.analog.in.on) && (handles.analog.in.n>0)
   [handles.analog.session.Channels(idx).TerminalConfig]=...
       deal(handles.analog.in.terminal_configurations_available{handles.analog.in.terminal_configuration});
 end
+
+
+% ---
+function set_video_param(obj,event,handles)
+
+data=get(handles.VideoParams,'data');
+row=event.Indices(1);
+
+if strcmp(data{row,4},'always')  return;  end
+
+if strcmp(data{row,4},'whileRunning')
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'stop(vi);');
+end
+  
+handles.video.actx(handles.video.curr).PutWorkspaceData('tmp','base',data{row,2});
+invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+    ['set(vi.Source,''' data{row,1} ''',tmp)']);
+
+if strcmp(data{row,4},'whileRunning')
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'start(vi);');
+end
+
+
+% ---
+function update_video_params(handles)
+invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+    'data=update_video_params_guts(vi)');
+data = handles.video.actx(handles.video.curr).GetVariable('data','base');
+
+% a hack to turn >1 numbers into string
+tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
+for i=1:length(tmp)
+  foo=data(tmp);
+  data{tmp}=num2str([foo{1}]);
+end
+
+set(handles.VideoParams,'data',data);
 
 
 % ---
@@ -786,6 +769,8 @@ imaqmem(1e10);
     
 for i=1:handles.video.n
   handles.video.actx(i) = actxserver('Matlab.Application.Single');
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['cd ' pwd]);
 %   handles.video.actx(i).Visible=0;
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
@@ -809,21 +794,22 @@ for i=1:handles.video.n
   end
 
   invoke(handles.video.actx(i), 'Execute', ...
-    ['vi,''FrameGrabInterval'',1);']);
+    ['set(vi,''FrameGrabInterval'',1);']);
 
 %   if(handles.video.save(i))
 %     set(handles.video.vi{i},'FramesAcquiredFcnCount',handles.video.pool,...
 %         'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,handles,i));
 %     set(handles.video.vi{i},'LoggingMode','memory','DiskLogger',[]);
 %   end
-  if(handles.video.save)
+  if(handles.video.save(i))
     invoke(handles.video.actx(i), 'Execute', ...
-        ['vifile=VideoWriter(fullfile(''' handles.video.directory ''',''' handles.filename '.avi''),' ...
-        '' handles.video.compression ''');']);
+        ['vifile=VideoWriter(''' ...
+        fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.avi']) ...
+        ''',''' handles.video.compression ''');']);
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vifile,''FrameRate'',' num2str(handles.video.FPS) ');']);
     invoke(handles.video.actx(i), 'Execute', ...
-        ['set(handles.video.input,''LoggingMode'',''disk&memory'',''DiskLogger'',vifile);']);
+        ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
   end
   
   invoke(handles.video.actx(i), 'Execute', ...
@@ -863,6 +849,16 @@ end
 
 if(handles.analog.out.on)
   set(handles.AnalogOutBuffer,'string',num2str(handles.analog.session.ScansQueued));
+end
+
+if handles.video.on && handles.video.save(handles.video.curr)
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
+  logged=handles.video.actx(handles.video.curr).GetVariable('DiskLoggerFrameCount','base');
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'FramesAcquired = vi.FramesAcquired;');
+  acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
+  set(handles.VideoFramesAvailable,'string',num2str(acquired-logged));
 end
 
 drawnow('expose')
@@ -993,7 +989,7 @@ if(~handles.running)
   if handles.video.on 
     handles=video_thread(handles);
     update_video_params(handles);
-    handles=video_setup_preview(handles)
+    handles=video_setup_preview(handles);
   end
 
   guidata(hObject, handles);
@@ -1037,21 +1033,21 @@ elseif(handles.running)
   end
 
   if handles.video.on 
-    handles=video_takedown_preview(handles)
+    handles=video_takedown_preview(handles);
     for i=1:handles.video.n
       invoke(handles.video.actx(i), 'Execute', ...
           'stop(vi);');
       if handles.video.save(i)
-        DiskLoggerFrameCount = 1; FramesAcquired = 0;
-        while(DiskLoggerFrameCount~=FramesAcquired)
-          pause(1);
-          invoke(handles.video.actx(i), 'Execute', ...
-              'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
-          handles.video.actx(i).GetVariable('DiskLoggerFrameCount','base')
-          invoke(handles.video.actx(i), 'Execute', ...
-              'FramesAcquired = vi.FramesAcquired;');
-          handles.video.actx(i).GetVariable('FramesAcquired','base')
-        end
+%         DiskLoggerFrameCount = 1; FramesAcquired = 0;
+%         while(DiskLoggerFrameCount~=FramesAcquired)
+%           pause(1);
+%           invoke(handles.video.actx(i), 'Execute', ...
+%               'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
+%           handles.video.actx(i).GetVariable('DiskLoggerFrameCount','base')
+%           invoke(handles.video.actx(i), 'Execute', ...
+%               'FramesAcquired = vi.FramesAcquired;');
+%           handles.video.actx(i).GetVariable('FramesAcquired','base')
+%         end
         invoke(handles.video.actx(i), 'Execute', ...
             'vifile=close(vi.DiskLogger)');
       end
@@ -1084,9 +1080,8 @@ elseif(handles.running)
 %   end
 
   set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
-  update_figure(handles);
-
   handles.running=0;
+  update_figure(handles);
 end
 
 guidata(hObject, handles);
@@ -1824,12 +1819,12 @@ function VideoChannel_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoChannel
 
 if handles.running
-  handles=video_takedown_preview(handles)
+  handles=video_takedown_preview(handles);
 end
 handles.video.curr=get(handles.VideoChannel,'value');
 if handles.running
   update_video_params(handles);
-  handles=video_setup_preview(handles)
+  handles=video_setup_preview(handles);
 end
 update_figure(handles);
 guidata(hObject, handles);
@@ -1871,9 +1866,16 @@ function VideoHistogram_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of VideoHistogram
 
 figure;
-im = get(handles.video.preview.im,'cdata');
-if handles.video.vi{handles.video.curr}.NumberOfBands == 1
-    n = hist(im(:),0:255);
+
+invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+    'im_cdata = get(im,''cdata'');');
+im_cdata=handles.video.actx(handles.video.curr).GetVariable('im_cdata','base');
+invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+    'nbands = vi.NumberOfBands;');
+nbands=handles.video.actx(handles.video.curr).GetVariable('nbands','base');
+
+if nbands == 1
+    n = hist(im_cdata(:),0:255);
     for j = 1:256
         h=patch([-.5 .5 .5 -.5]+j, [0 0 1 1]*n(j), 'b','edgecolor','none');
         if j==1
@@ -1888,7 +1890,7 @@ else %if RGB image
     maxval = 0;
     c = 'rgb';
     for i = 1:3
-        temp = im(:,:,i);
+        temp = im_cdata(:,:,i);
         n = hist(temp(:),0:255);
         for j = 1:256
             h=patch([-.5 .5 .5 -.5]+j, [0 0 1 1]*n(j), c(i),'edgecolor','none');
