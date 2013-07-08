@@ -90,10 +90,8 @@ handles.video.FPS=nan;
 handles.video.trigger=[];
 handles.video.ncounters=0;
 handles.video.counter=1;
-handles.video.compression='Motion JPEG AVI';
-handles.video.fileformatlist={'JPG','JP2'};
-handles.video.fileformatvalue=1;
-handles.video.fileformatquality=75;
+handles.video.fileformat=1;
+handles.video.filequality=nan;
 handles.video.pool=1;
 handles.running=0;
 handles.filename='';
@@ -145,10 +143,8 @@ handles.video.FPS=handles_saved.video.FPS;
 handles.video.trigger=handles_saved.video.trigger;
 handles.video.ncounters=handles_saved.video.ncounters;
 handles.video.counter=handles_saved.video.counter;
-handles.video.compression=handles_saved.video.compression;
-handles.video.fileformatlist=handles_saved.video.fileformatlist;
-handles.video.fileformatvalue=handles_saved.video.fileformatvalue;
-handles.video.fileformatquality=handles_saved.video.fileformatquality;
+handles.video.fileformat=handles_saved.video.fileformat;
+handles.video.filequality=handles_saved.video.filequality;
 handles.video.pool=handles_saved.video.pool;
 handles.running=0;
 handles.filename=handles_saved.filename;
@@ -238,6 +234,7 @@ end
 
 set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
 set(handles.VideoParams,'enable','off');
+set_videoquality_tooltip_str(handles);
 if(handles.video.on && (handles.video.maxn>0))
   if handles.running
     set(handles.VideoHistogram,'enable','on');
@@ -264,10 +261,8 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoDirectory,'enable','off');
     set(handles.VideoSave,'value',0);
   end
-  set(handles.VideoFileFormat,'string',handles.video.fileformatlist,...
-      'value',handles.video.fileformatvalue);
-  set(handles.VideoFileFormatQuality,'string',handles.video.fileformatquality);
-  set_videoquality_tooltip_str(handles);
+  set(handles.VideoFileFormat,'value',handles.video.fileformat);
+  set(handles.VideoFileQuality,'string',handles.video.filequality);
   set(handles.VideoParams,'enable','on');
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
@@ -277,7 +272,6 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFormat,'enable','on');
   set(handles.VideoTrigger,'enable','on');
   set(handles.VideoFileFormat,'enable','on');
-  set(handles.VideoFileFormatQuality,'enable','on');
 else
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFPS,'enable','off');
@@ -287,7 +281,6 @@ else
   set(handles.VideoFormat,'enable','off');
   set(handles.VideoTrigger,'enable','off');
   set(handles.VideoFileFormat,'enable','off');
-  set(handles.VideoFileFormatQuality,'enable','off');
 end
 
 set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
@@ -365,7 +358,7 @@ end
 % ---
 function update_video_params(handles)
 invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'data=update_video_params_guts(vi)');
+    'data=av_update_video_params(vi)');
 data = handles.video.actx(handles.video.curr).GetVariable('data','base');
 
 % a hack to turn >1 numbers into string
@@ -475,7 +468,13 @@ else
 end
 
 if(isfield(handles,'videoadaptors'))
-  tmp=[];
+  tmp=VideoWriter(tempname);
+  tmp=tmp.getProfiles;
+  [handles.video.fileformats_available{1:length(tmp)}]=deal(tmp.Name);
+  handles.video.fileformat=min(handles.video.fileformat,length(handles.video.fileformats_available));
+  set(handles.VideoFileFormat,'String',handles.video.fileformats_available);
+
+  %tmp=[];
   maxn=0;  adaptor={};  deviceid=[];  devicename={};  formatlist={};
   for i=handles.videoadaptors.InstalledAdaptors
     info=imaqhwinfo(char(i));
@@ -504,11 +503,11 @@ if(isfield(handles,'videoadaptors'))
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
   end
-  handles.video.pool=10;
-  if(exist('matlabpool')==2)
-    c=parcluster;
-    handles.video.pool=10*c.NumWorkers;
-  end
+%   handles.video.pool=10;
+%   if(exist('matlabpool')==2)
+%     c=parcluster;
+%     handles.video.pool=10*c.NumWorkers;
+%   end
   handles=configure_video_channels(handles);
 else
   set(handles.VideoOnOff,'enable','off');
@@ -693,59 +692,6 @@ end
 
 
 % ---
-% function video_callback(src,evt,handles,idx)
-% 
-% persistent time0
-% 
-% tic;
-% 
-% if handles.verbose>0
-%   disp('entering video_callback');
-% end
-% 
-% try
-%   [data time metadata]=getdata(handles.video.vi{idx},handles.video.pool);
-% catch
-%   [data time metadata]=getdata(handles.video.vi{idx});
-% end
-% 
-% if(handles.video.save)
-%   flag=sum(handles.video.save);
-%   directory=handles.video.directory{idx};
-%   filename=[handles.filename 'v'];
-%   extension=handles.video.extension;
-%   format=handles.video.fileformatlist{handles.video.fileformatvalue};
-%   quality=handles.video.quality;
-%   %for i=1:size(data,4)
-%   parfor i=1:size(data,4)
-%     %extension='.tif';  format='tif';  quality={};
-%     if(flag==1)
-%       tmp=fullfile(directory, filename, [num2str(metadata(i).FrameNumber) extension]);
-%     else
-%       tmp=fullfile(directory, filename, num2str(i), [num2str(metadata(i).FrameNumber) extension]);
-%     end
-%     imwrite(data(:,:,:,i), tmp, format, quality{:});
-%   end
-% end
-% 
-% if handles.video.curr==idx
-%   if(~isempty(time0))
-%     set(handles.VideoFPSAchieved,'string',num2str(round(length(time)/(time(end)-time0))));
-%   end
-%   time0=time(end);
-%   set(handles.VideoFPSProcessed,'string',num2str(round(handles.video.pool/toc)));
-%   set(handles.VideoFramesAvailable,'string',num2str(get(handles.video.vi{idx},'FramesAvailable')));
-% end
-% 
-% if handles.verbose>0
-%   disp(['exiting  video_callback:  ' ...
-%         num2str(toc/(size(data,4)/handles.video.FPS),3) 'x real time is ' ...
-%         num2str(toc,3) 's to process ' ...
-%         num2str(size(data,4)/handles.video.FPS,3) 's of data']);
-% end
-
-
-% ---
 function handles=video_thread(handles)
 
 imaqmem(1e10);
@@ -758,15 +704,17 @@ imaqmem(1e10);
 %     mkdir(fullfile(handles.video.directory{i},[handles.filename 'v'],num2str(i)));
 %   end
 % end
-% switch(handles.video.fileformatlist{handles.video.fileformatvalue})
-%   case 'JPG'
-%     handles.video.quality={'quality' handles.video.fileformatquality};
-%     handles.video.extension='.jpg';
-%   case 'JP2'
-%     handles.video.quality={'compressionratio' handles.video.fileformatquality};
-%     handles.video.extension='.jp2';
-% end
-    
+switch(handles.video.fileformats_available{handles.video.fileformat})
+  case {'Motion JPEG AVI','MPEG-4'}
+    quality=[',''quality'',' num2str(handles.video.filequality)];
+%    handles.video.extension='.jpg';
+  case 'Motion JPEG 2000'
+    quality=[',''compressionratio'',' num2str(handles.video.filequality)];
+%    handles.video.extension='.jp2';
+  otherwise
+    quality='';
+end
+
 for i=1:handles.video.n
   handles.video.actx(i) = actxserver('Matlab.Application.Single');
   invoke(handles.video.actx(i), 'Execute', ...
@@ -796,20 +744,28 @@ for i=1:handles.video.n
   invoke(handles.video.actx(i), 'Execute', ...
     ['set(vi,''FrameGrabInterval'',1);']);
 
-%   if(handles.video.save(i))
-%     set(handles.video.vi{i},'FramesAcquiredFcnCount',handles.video.pool,...
-%         'FramesAcquiredFcn',@(hObject,eventdata)video_callback(hObject,eventdata,handles,i));
-%     set(handles.video.vi{i},'LoggingMode','memory','DiskLogger',[]);
-%   end
   if(handles.video.save(i))
     invoke(handles.video.actx(i), 'Execute', ...
         ['vifile=VideoWriter(''' ...
-        fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.avi']) ...
-        ''',''' handles.video.compression ''');']);
+        fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.avi']) ''',''' ...
+        handles.video.fileformats_available{handles.video.fileformat} ''');']);
     invoke(handles.video.actx(i), 'Execute', ...
-        ['set(vifile,''FrameRate'',' num2str(handles.video.FPS) ');']);
+        ['set(vifile,''FrameRate'',' num2str(handles.video.FPS) ...
+        quality ');']);
+    if false
+      invoke(handles.video.actx(i), 'Execute', ...
+          ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
+    else
+      invoke(handles.video.actx(i), 'Execute', ...
+          ['set(vi,''FramesAcquiredFcnCount'',' num2str(handles.video.FPS) ','...
+              '''FramesAcquiredFcn'',@(hObject,eventdata)av_video_callback(hObject,eventdata,vi,' ...
+              num2str(handles.video.FPS) ',vifile,' num2str(handles.verbose) ',' ...
+              num2str(handles.video.curr==i) '));']);
+      invoke(handles.video.actx(i), 'Execute', ...
+          'set(vi,''LoggingMode'',''memory'',''DiskLogger'',[]);');
+    end
     invoke(handles.video.actx(i), 'Execute', ...
-        ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
+       'open(vifile);');
   end
   
   invoke(handles.video.actx(i), 'Execute', ...
@@ -852,13 +808,27 @@ if(handles.analog.out.on)
 end
 
 if handles.video.on && handles.video.save(handles.video.curr)
-  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-      'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
-  logged=handles.video.actx(handles.video.curr).GetVariable('DiskLoggerFrameCount','base');
-  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-      'FramesAcquired = vi.FramesAcquired;');
-  acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
-  set(handles.VideoFramesAvailable,'string',num2str(acquired-logged));
+  if false
+    invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+        'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
+    logged=handles.video.actx(handles.video.curr).GetVariable('DiskLoggerFrameCount','base');
+    invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+        'FramesAcquired = vi.FramesAcquired;');
+    acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
+    set(handles.VideoFramesAvailable,'string',num2str(acquired-logged));
+  else
+    try
+      set(handles.VideoFPSAchieved,'string',...
+          num2str(handles.video.actx(handles.video.curr).GetVariable('FPSAchieved','base')));
+      set(handles.VideoFPSProcessed,'string',...
+          num2str(handles.video.actx(handles.video.curr).GetVariable('FPSProcessed','base')));
+      set(handles.VideoFramesAvailable,'string',...
+          num2str(handles.video.actx(handles.video.curr).GetVariable('FramesAvailable','base')));
+      set(handles.VideoFramesSkipped,'string',...
+          num2str(handles.video.actx(handles.video.curr).GetVariable('FramesSkipped','base')));
+    catch
+    end
+  end
 end
 
 drawnow('expose')
@@ -934,7 +904,7 @@ if(~handles.running)
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoTrigger,'enable','off');
   set(handles.VideoFileFormat,'enable','off');
-  set(handles.VideoFileFormatQuality,'enable','off');
+  set(handles.VideoFileQuality,'enable','off');
   set(handles.VideoParams,'enable','on');
   set(handles.VideoHistogram,'enable','on');
   set(handles.VerboseLevel,'enable','off');
@@ -1924,36 +1894,39 @@ function VideoFileFormat_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of VideoTrigger
 
-handles.video.fileformatvalue=get(handles.VideoFileFormat,'value');
+handles.video.fileformat=get(handles.VideoFileFormat,'value');
 set_videoquality_tooltip_str(handles);
 guidata(hObject, handles);
 
 
 function set_videoquality_tooltip_str(handles)
 
-switch(handles.video.fileformatlist{handles.video.fileformatvalue})
-  case 'JPG'
-    set(handles.VideoFileFormatQuality,'tooltipstring','quality (1-100)');
-  case 'JP2'
-    set(handles.VideoFileFormatQuality,'tooltipstring','compression ratio (>1)');
+set(handles.VideoFileQuality,'enable','on');
+switch(handles.video.fileformats_available{handles.video.fileformat})
+  case {'Motion JPEG AVI','MPEG-4'}
+    set(handles.VideoFileQuality,'tooltipstring','quality (1-100)');
+  case 'Motion JPEG 2000'
+    set(handles.VideoFileQuality,'tooltipstring','compression ratio (>1)');
+  otherwise
+    set(handles.VideoFileQuality,'enable','off');
 end
 
 
-function VideoFileFormatQuality_Callback(hObject, eventdata, handles)
-% hObject    handle to VideoFileFormatQuality (see GCBO)
+function VideoFileQuality_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoFileQuality (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of VideoFileFormatQuality as text
-%        str2double(get(hObject,'String')) returns contents of VideoFileFormatQuality as a double
+% Hints: get(hObject,'String') returns contents of VideoFileQuality as text
+%        str2double(get(hObject,'String')) returns contents of VideoFileQuality as a double
 
-handles.video.fileformatquality=str2num(get(hObject,'String'));
+handles.video.filequality=str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function VideoFileFormatQuality_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to VideoFileFormatQuality (see GCBO)
+function VideoFileQuality_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to VideoFileQuality (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
