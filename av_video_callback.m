@@ -1,6 +1,6 @@
-function av_video_callback(evt,src,vi,FPS,vifile,verbose,current)
+function av_video_callback(evt,src,vi,FPS,vifile,verbose,current,skippedframes)
 
-persistent time0
+persistent time0 skipped0
 
 tic;
 
@@ -18,20 +18,26 @@ end
 nframes=size(data,4);
 ts=nan(1,nframes);
 fn=nan(1,nframes);
-for i=1:nframes
-  %f=rgb2gray(data(:,:,:,i));
 
-  tmp=data(1,1:4,1,i);
-  second_count=uint16(bitand(tmp(1),254)/2);
-  cycle_count= uint16(bitand(tmp(1),1))*2^12 + ...
-               uint16(bitand(tmp(2),255))*2^4 + ...
-               uint16(bitand(tmp(3),128+64+32+16))/2^4;
-  cycle_offset=uint16(bitand(tmp(3),8+4+2+1)*2^8) + ...
-               uint16(bitand(tmp(4),255));
-  ts(i)=double(second_count) + double(cycle_count)/8000 + 125e-6*double(cycle_offset)/3072;
+switch skippedframes
+  case 2
+    ts=time;
+  case 3
+    for i=1:nframes
+      %f=rgb2gray(data(:,:,:,i));
 
-  tmp=data(1,5:8,1,i);
-  fn(i)=uint32(tmp(1))*2^24 + uint32(tmp(2))*2^16 + uint32(tmp(3))*2^8 + uint32(tmp(4));
+      tmp=data(1,1:4,1,i);
+      second_count=uint16(bitand(tmp(1),254)/2);
+      cycle_count= uint16(bitand(tmp(1),1))*2^12 + ...
+                   uint16(bitand(tmp(2),255))*2^4 + ...
+                   uint16(bitand(tmp(3),128+64+32+16))/2^4;
+      cycle_offset=uint16(bitand(tmp(3),8+4+2+1)*2^8) + ...
+                   uint16(bitand(tmp(4),255));
+      ts(i)=double(second_count) + double(cycle_count)/8000 + 125e-6*double(cycle_offset)/3072;
+
+%       tmp=data(1,5:8,1,i);
+%       fn(i)=uint32(tmp(1))*2^24 + uint32(tmp(2))*2^16 + uint32(tmp(3))*2^8 + uint32(tmp(4));
+    end
 end
 
 skip=round(diff(ts)*vifile.FrameRate);
@@ -55,7 +61,9 @@ if current
   time0=time(end);
   assignin('base','FPSProcessed',round(FPS/toc));
   assignin('base','FramesAvailable',get(vi,'FramesAvailable'));
-  assignin('base','FramesSkipped',total);
+  if(isempty(skipped0))  skipped0=0;  end
+  skipped0=skipped0+total;
+  assignin('base','FramesSkipped',skipped0);
 end
 
 if verbose>0
