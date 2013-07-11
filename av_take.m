@@ -90,7 +90,7 @@ handles.video.FPS=nan;
 handles.video.trigger=[];
 handles.video.ncounters=0;
 handles.video.counter=1;
-handles.video.skippedframes=1;
+handles.video.timestamps=1;
 handles.video.fileformat=1;
 handles.video.filequality=nan;
 handles.video.pool=1;
@@ -144,7 +144,7 @@ handles.video.FPS=handles_saved.video.FPS;
 handles.video.trigger=handles_saved.video.trigger;
 handles.video.ncounters=handles_saved.video.ncounters;
 handles.video.counter=handles_saved.video.counter;
-handles.video.skippedframes=handles_saved.video.skippedframes;
+handles.video.timestamps=handles_saved.video.timestamps;
 handles.video.fileformat=handles_saved.video.fileformat;
 handles.video.filequality=handles_saved.video.filequality;
 handles.video.pool=handles_saved.video.pool;
@@ -263,7 +263,7 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoDirectory,'enable','off');
     set(handles.VideoSave,'value',0);
   end
-  set(handles.VideoSkippedFrames,'value',handles.video.skippedframes);
+  set(handles.VideoTimeStamps,'value',handles.video.timestamps);
   set(handles.VideoFileFormat,'value',handles.video.fileformat);
   set(handles.VideoFileQuality,'string',handles.video.filequality);
   set(handles.VideoParams,'enable','on');
@@ -742,22 +742,27 @@ for i=1:handles.video.n
   if(handles.video.save(i))
     invoke(handles.video.actx(i), 'Execute', ...
         ['vifile=VideoWriter(''' ...
-        fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.avi']) ''',''' ...
+        fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i)]) ''',''' ...
         handles.video.fileformats_available{handles.video.fileformat} ''');']);
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vifile,''FrameRate'',' num2str(handles.video.FPS) ...
         quality ');']);
-    if handles.video.skippedframes==1
+    if handles.video.timestamps==1
       invoke(handles.video.actx(i), 'Execute', ...
           ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
+      %set(handles.VideoFPSProcessed,'string','n/a');
+      set(handles.VideoFramesSkipped,'string','n/a');
     else
+      invoke(handles.video.actx(i), 'Execute', ...
+          ['fid=fopen(''' ...
+          fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.ts']) ''',''w'');']);
       invoke(handles.video.actx(i), 'Execute', ...
           ['set(vi,''FramesAcquiredFcnCount'',' num2str(handles.video.FPS) ','...
               '''FramesAcquiredFcn'',@(hObject,eventdata)av_video_callback(hObject,eventdata,vi,' ...
-              num2str(handles.video.FPS) ',vifile,' num2str(handles.verbose) ',' ...
-              num2str(handles.video.curr==i) ',' num2str(handles.video.skippedframes) '));']);
+              num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
+              num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) '));']);
       invoke(handles.video.actx(i), 'Execute', ...
-          'set(vi,''LoggingMode'',''memory'',''DiskLogger'',[]);');
+          'set(vi,''LoggingMode'',''disk&memory'',''DiskLogger'',vifile);');
     end
     invoke(handles.video.actx(i), 'Execute', ...
        'open(vifile);');
@@ -804,7 +809,7 @@ end
 
 if handles.video.on && handles.video.save(handles.video.curr)
   try
-    if handles.video.skippedframes==1
+    if handles.video.timestamps==1
       invoke(handles.video.actx(handles.video.curr), 'Execute', ...
           'InitialTriggerTime = vi.InitialTriggerTime;');
       triggertime=handles.video.actx(handles.video.curr).GetVariable('InitialTriggerTime','base');
@@ -814,14 +819,17 @@ if handles.video.on && handles.video.save(handles.video.curr)
       invoke(handles.video.actx(handles.video.curr), 'Execute', ...
           'FramesAcquired = vi.FramesAcquired;');
       acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
-      set(handles.VideoFPSAchieved,'string',num2str(round(acquired/((now-datenum(triggertime))*24*60*60))));
-      set(handles.VideoFPSProcessed,'string',num2str(round(logged/((now-datenum(triggertime))*24*60*60))));
-      set(handles.VideoFramesAvailable,'string',num2str(round(acquired-logged)));
+      set(handles.VideoFPSAchieved,'string',...
+          num2str(round(acquired/((now-datenum(triggertime))*24*60*60))));
+%       set(handles.VideoFPSProcessed,'string',...
+%          num2str(round(logged/((now-datenum(triggertime))*24*60*60))));
+      set(handles.VideoFramesAvailable,'string',...
+          num2str(round(acquired-logged)));
     else
       set(handles.VideoFPSAchieved,'string',...
           num2str(handles.video.actx(handles.video.curr).GetVariable('FPSAchieved','base')));
-      set(handles.VideoFPSProcessed,'string',...
-          num2str(handles.video.actx(handles.video.curr).GetVariable('FPSProcessed','base')));
+%       set(handles.VideoFPSProcessed,'string',...
+%           num2str(handles.video.actx(handles.video.curr).GetVariable('FPSProcessed','base')));
       set(handles.VideoFramesAvailable,'string',...
           num2str(handles.video.actx(handles.video.curr).GetVariable('FramesAvailable','base')));
       set(handles.VideoFramesSkipped,'string',...
@@ -1022,6 +1030,10 @@ elseif(handles.running)
         invoke(handles.video.actx(i), 'Execute', ...
             'close(vifile);');
 %            'vifile=close(vi.DiskLogger)');
+        if handles.video.timestamps>1
+          invoke(handles.video.actx(i), 'Execute', ...
+              'fclose(fid);');
+        end
       end
       handles.video.actx(i).Quit;
 %       if (sum(handles.video.save)>0)
@@ -1636,16 +1648,16 @@ guidata(hObject,handles);
 
 
 
-% --- Executes on selection change in VideoSkippedFrames.
-function VideoSkippedFrames_Callback(hObject, eventdata, handles)
-% hObject    handle to VideoSkippedFrames (see GCBO)
+% --- Executes on selection change in VideoTimeStamps.
+function VideoTimeStamps_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoTimeStamps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns VideoSkippedFrames contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from VideoSkippedFrames
+% Hints: contents = cellstr(get(hObject,'String')) returns VideoTimeStamps contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from VideoTimeStamps
 
-handles.video.skippedframes=get(handles.VideoSkippedFrames,'value');
+handles.video.timestamps=get(handles.VideoTimeStamps,'value');
 update_figure(handles);
 guidata(hObject,handles);
 
