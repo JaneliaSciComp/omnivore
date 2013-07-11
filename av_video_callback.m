@@ -59,7 +59,7 @@ if current
   end
   time0=time(end);
   %assignin('base','FPSProcessed',round(FPS/toc));
-  assignin('base','FramesAvailable',get(vi,'FramesAvailable'));
+  assignin('base','FramesAvailable',get(vi,'FramesAcquired')-get(vi,'DiskLoggerFrameCount'));
   if(isempty(skipped0))  skipped0=0;  end
   skipped0=skipped0+total;
   assignin('base','FramesSkipped',skipped0);

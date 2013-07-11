@@ -272,6 +272,7 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoROI,'enable','on');
   set(handles.VideoNumChannels,'enable','on');
   set(handles.VideoChannel,'enable','on');
+  set(handles.VideoTimeStamps,'enable','on');
   set(handles.VideoFormat,'enable','on');
   set(handles.VideoTrigger,'enable','on');
   set(handles.VideoFileFormat,'enable','on');
@@ -281,6 +282,7 @@ else
   set(handles.VideoROI,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
   set(handles.VideoChannel,'enable','off');
+  set(handles.VideoTimeStamps,'enable','off');
   set(handles.VideoFormat,'enable','off');
   set(handles.VideoTrigger,'enable','off');
   set(handles.VideoFileFormat,'enable','off');
@@ -714,30 +716,47 @@ for i=1:handles.video.n
   handles.video.actx(i) = actxserver('Matlab.Application.Single');
   invoke(handles.video.actx(i), 'Execute', ...
       ['cd ' pwd]);
+    
 %   handles.video.actx(i).Visible=0;
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
       ['vi=videoinput(''' handles.video.adaptor{i} ''',' num2str(handles.video.deviceid(i)) ',''' ...
       handles.video.formatlist{i}{handles.video.formatvalue(i)} ''');']);
-  %handles.video.vi{i}=GetVariable('vi','base');
   if(~isempty(handles.video.ROI))
-    invoke(handles.video.actx(i), 'Execute', ...
-        ['set(vi,''ROIPosition'',[' num2str(handles.video.ROI(i,:)) ']);']);
+      invoke(handles.video.actx(i), 'Execute', ...
+          ['set(vi,''ROIPosition'',[' num2str(handles.video.ROI(i,:)) ']);']);
   end
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['set(vi,''FrameGrabInterval'',1);']);
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['set(vi,''FramesPerTrigger'',inf,''TriggerRepeat'',1);']);
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
+
+  if(handles.video.save(i))  % hack
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['vifile=VideoWriter(tempname,''' ...
+        handles.video.fileformats_available{handles.video.fileformat} ''');']);
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
+%     invoke(handles.video.actx(i), 'Execute', ...
+%        'open(vifile);');
+    invoke(handles.video.actx(i), 'Execute', ...
+       'start(vi);  pause(1);  stop(vi);');
+    invoke(handles.video.actx(i), 'Execute', ...
+        'tic;  while((vi.DiskLoggerFrameCount~=vi.FramesAcquired)) && (toc<10))  pause(0.1);  end');
+    invoke(handles.video.actx(i), 'Execute', ...
+       'tmp=fullfile(vifile.Path,vifile.Filename);  close(vifile);  delete(tmp);');
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['set(vi,''LoggingMode'',''memory'',''DiskLogger'',[]);']);
+  end
+  
   if(handles.video.counter>1)
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vi,''FramesPerTrigger'',1,''TriggerRepeat'',inf);']);
     invoke(handles.video.actx(i), 'Execute', ...
         ['triggerconfig(vi, ''hardware'', ''fallingEdge'', ''externalTriggerMode0-Source0'');']);
-  else
-    invoke(handles.video.actx(i), 'Execute', ...
-        ['set(vi,''FramesPerTrigger'',inf,''TriggerRepeat'',1);']);
-    invoke(handles.video.actx(i), 'Execute', ...
-        ['triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
   end
-
-  invoke(handles.video.actx(i), 'Execute', ...
-    ['set(vi,''FrameGrabInterval'',1);']);
 
   if(handles.video.save(i))
     invoke(handles.video.actx(i), 'Execute', ...
@@ -750,7 +769,6 @@ for i=1:handles.video.n
     if handles.video.timestamps==1
       invoke(handles.video.actx(i), 'Execute', ...
           ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
-      %set(handles.VideoFPSProcessed,'string','n/a');
       set(handles.VideoFramesSkipped,'string','n/a');
     else
       invoke(handles.video.actx(i), 'Execute', ...
@@ -764,8 +782,8 @@ for i=1:handles.video.n
       invoke(handles.video.actx(i), 'Execute', ...
           'set(vi,''LoggingMode'',''disk&memory'',''DiskLogger'',vifile);');
     end
-    invoke(handles.video.actx(i), 'Execute', ...
-       'open(vifile);');
+%     invoke(handles.video.actx(i), 'Execute', ...
+%        'open(vifile);');
   end
   
   invoke(handles.video.actx(i), 'Execute', ...
@@ -821,15 +839,11 @@ if handles.video.on && handles.video.save(handles.video.curr)
       acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
       set(handles.VideoFPSAchieved,'string',...
           num2str(round(acquired/((now-datenum(triggertime))*24*60*60))));
-%       set(handles.VideoFPSProcessed,'string',...
-%          num2str(round(logged/((now-datenum(triggertime))*24*60*60))));
       set(handles.VideoFramesAvailable,'string',...
           num2str(round(acquired-logged)));
     else
       set(handles.VideoFPSAchieved,'string',...
           num2str(handles.video.actx(handles.video.curr).GetVariable('FPSAchieved','base')));
-%       set(handles.VideoFPSProcessed,'string',...
-%           num2str(handles.video.actx(handles.video.curr).GetVariable('FPSProcessed','base')));
       set(handles.VideoFramesAvailable,'string',...
           num2str(handles.video.actx(handles.video.curr).GetVariable('FramesAvailable','base')));
       set(handles.VideoFramesSkipped,'string',...
@@ -907,6 +921,7 @@ if(~handles.running)
   set(handles.VideoOnOff,'enable','off');
   set(handles.VideoSave,'enable','off');
   set(handles.VideoFormat,'enable','off');
+  set(handles.VideoTimeStamps,'enable','off');
   set(handles.VideoROI,'enable','off');
   set(handles.VideoFPS,'enable','off');
   set(handles.VideoNumChannels,'enable','off');
@@ -1017,16 +1032,43 @@ elseif(handles.running)
       invoke(handles.video.actx(i), 'Execute', ...
           'stop(vi);');
       if handles.video.save(i)
-%         DiskLoggerFrameCount = 1; FramesAcquired = 0;
-%         while(DiskLoggerFrameCount~=FramesAcquired)
-%           pause(1);
-%           invoke(handles.video.actx(i), 'Execute', ...
-%               'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;');
-%           handles.video.actx(i).GetVariable('DiskLoggerFrameCount','base')
-%           invoke(handles.video.actx(i), 'Execute', ...
-%               'FramesAcquired = vi.FramesAcquired;');
-%           handles.video.actx(i).GetVariable('FramesAcquired','base')
-%         end
+%         invoke(handles.video.actx(i), 'Execute', ...
+%             ['tic; '...
+%             'while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired) || (vi.FramesAvailable>0)) && (toc<30)) '...
+%               'pause(0.1); ' ...
+%               'if(vi.FramesAvailable>0) ' ...
+%                   'av_video_callback([],[],vi,' ...
+%                   num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
+%                   num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) '); ' ...
+%               'end; ' ...
+%             'end; ' ...
+%             'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;']);
+        tic;
+        while(((toc<1) || (logged~=acquired) || (available>0)) && (toc<30))
+          invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+              'logged = vi.DiskLoggerFrameCount;');
+          logged = handles.video.actx(handles.video.curr).GetVariable('logged','base');
+          invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+              'acquired = vi.FramesAcquired;');
+          acquired = handles.video.actx(handles.video.curr).GetVariable('acquired','base');
+          invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+              'available = vi.FramesAvailable;');
+          available = handles.video.actx(handles.video.curr).GetVariable('available','base');
+          disp(['logged=' num2str(logged) ', acquired=' num2str(acquired) ', available=' num2str(available)]);
+          if(available>0)
+            invoke(handles.video.actx(i), 'Execute', ...
+                ['av_video_callback([],[],vi,' ...
+                num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
+                num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) ');']);
+          end
+          pause(0.1);
+        end
+        invoke(handles.video.actx(i), 'Execute', ...
+            'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;');
+        not_saved=handles.video.actx(i).GetVariable('not_saved','base');
+        if(not_saved>0)
+          warning([num2str(not_saved) ' frames have not been saved']);
+        end
         invoke(handles.video.actx(i), 'Execute', ...
             'close(vifile);');
 %            'vifile=close(vi.DiskLogger)');
@@ -1036,20 +1078,6 @@ elseif(handles.running)
         end
       end
       handles.video.actx(i).Quit;
-%       if (sum(handles.video.save)>0)
-%           flag=true;
-%           while flag
-%             flag=false;
-%             for i=1:handles.video.n
-%               if(~handles.video.save(i))  continue;  end
-%               if(get(handles.video.vi{i},'FramesAvailable')>0)
-%                 flag=true;
-%                 video_callback([],[],handles,i)
-%               end
-%             end
-%           end
-%       end
-%       delete([handles.video.vi{:}]);
     end
   end
 
