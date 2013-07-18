@@ -1,4 +1,4 @@
-function data = av_update_video_params(vi)
+function data = av_get_video_params(vi)
 ss = getselectedsource(vi);
 a = get(ss);
 c = fieldnames(a);

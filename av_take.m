@@ -93,7 +93,7 @@ handles.video.counter=1;
 handles.video.timestamps=1;
 handles.video.fileformat=1;
 handles.video.filequality=nan;
-handles.video.pool=1;
+jandles.video.params={};
 handles.running=0;
 handles.filename='';
 handles.timelimit=0;
@@ -147,7 +147,7 @@ handles.video.counter=handles_saved.video.counter;
 handles.video.timestamps=handles_saved.video.timestamps;
 handles.video.fileformat=handles_saved.video.fileformat;
 handles.video.filequality=handles_saved.video.filequality;
-handles.video.pool=handles_saved.video.pool;
+handles.video.params=handles_saved.video.params;
 handles.running=0;
 handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
@@ -181,6 +181,7 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
   set(handles.AnalogOutStyle,'enable','on');
   set(handles.AnalogOutXScale,'enable','on');
   set(handles.AnalogOutYScale,'enable','on');
+  set(handles.AnalogOutRange,'enable','on');
 else
   set(handles.AnalogOutPlay,'enable','off');
   set(handles.AnalogOutFile,'enable','off');
@@ -189,6 +190,7 @@ else
   set(handles.AnalogOutStyle,'enable','off');
   set(handles.AnalogOutXScale,'enable','off');
   set(handles.AnalogOutYScale,'enable','off');
+  set(handles.AnalogOutRange,'enable','off');
 end
 
 set(handles.AnalogInOnOff,'value',handles.analog.in.on,'enable','on');
@@ -266,6 +268,7 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoTimeStamps,'value',handles.video.timestamps);
   set(handles.VideoFileFormat,'value',handles.video.fileformat);
   set(handles.VideoFileQuality,'string',handles.video.filequality);
+  set(handles.VideoParams,'data',handles.video.params{handles.video.curr});
   set(handles.VideoParams,'enable','on');
   set(handles.VideoSave,'enable','on');
   set(handles.VideoFPS,'enable','on');
@@ -341,6 +344,7 @@ end
 function set_video_param(obj,event,handles)
 
 data=get(handles.VideoParams,'data');
+handles.video.params{handles.video.curr}=data;
 row=event.Indices(1);
 
 if strcmp(data{row,4},'always')  return;  end
@@ -358,12 +362,14 @@ if strcmp(data{row,4},'whileRunning')
   invoke(handles.video.actx(handles.video.curr), 'Execute', ...
       'start(vi);');
 end
+guidata(obj, handles);
 
 
 % ---
-function update_video_params(handles)
+function handles=get_video_params(handles)
+
 invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'data=av_update_video_params(vi)');
+    'data=av_get_video_params(vi)');
 data = handles.video.actx(handles.video.curr).GetVariable('data','base');
 
 % a hack to turn >1 numbers into string
@@ -374,6 +380,7 @@ for i=1:length(tmp)
 end
 
 set(handles.VideoParams,'data',data);
+handles.video.params{handles.video.curr}=data;
 
 
 % ---
@@ -499,6 +506,7 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=repmat([0 0 640 480],maxn,1);
     handles.video.FPS=1;
+    handles.video.params=cell(1,maxn);
   end
 %   handles.video.pool=10;
 %   if(exist('matlabpool')==2)
@@ -757,6 +765,18 @@ for i=1:handles.video.n
     invoke(handles.video.actx(i), 'Execute', ...
         ['triggerconfig(vi, ''hardware'', ''fallingEdge'', ''externalTriggerMode0-Source0'');']);
   end
+  
+  data=handles.video.params{i};
+  if ~isempty(data)
+    for j=1:size(data,1)
+      if strcmp(data{j,4},'always')  continue;  end
+      handles.video.actx(handles.video.curr).PutWorkspaceData('tmp','base',data{j,2});
+      invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+          ['set(vi.Source,''' data{j,1} ''',tmp)']);
+    end
+  else
+    handles=get_video_params(handles);
+  end
 
   if(handles.video.save(i))
     invoke(handles.video.actx(i), 'Execute', ...
@@ -981,7 +1001,7 @@ if(~handles.running)
 
   if handles.video.on 
     handles=video_thread(handles);
-    update_video_params(handles);
+    %update_video_params(handles);
     handles=video_setup_preview(handles);
   end
 
@@ -989,7 +1009,7 @@ if(~handles.running)
 
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     clear av_video_callback
-    handles.analog.session.NotifyWhenDataAvailableExceeds=handles.analog.in.fs;
+    handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.analog.session.IsContinuous=true;
     handles.analog.session.startBackground;
@@ -1044,7 +1064,7 @@ elseif(handles.running)
 %             'end; ' ...
 %             'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;']);
         tic;
-        while(((toc<1) || (logged~=acquired) || (available>0)) && (toc<30))
+        while(((toc<1) || (logged~=acquired) || (available>0)) && (toc<10))
           invoke(handles.video.actx(handles.video.curr), 'Execute', ...
               'logged = vi.DiskLoggerFrameCount;');
           logged = handles.video.actx(handles.video.curr).GetVariable('logged','base');
@@ -1849,7 +1869,6 @@ if handles.running
 end
 handles.video.curr=get(handles.VideoChannel,'value');
 if handles.running
-  update_video_params(handles);
   handles=video_setup_preview(handles);
 end
 update_figure(handles);
