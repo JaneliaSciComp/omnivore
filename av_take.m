@@ -770,8 +770,8 @@ for i=1:handles.video.n
   if ~isempty(data)
     for j=1:size(data,1)
       if strcmp(data{j,4},'always')  continue;  end
-      handles.video.actx(handles.video.curr).PutWorkspaceData('tmp','base',data{j,2});
-      invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      handles.video.actx(i).PutWorkspaceData('tmp','base',data{j,2});
+      invoke(handles.video.actx(i), 'Execute', ...
           ['set(vi.Source,''' data{j,1} ''',tmp)']);
     end
   else
@@ -804,10 +804,10 @@ for i=1:handles.video.n
     end
 %     invoke(handles.video.actx(i), 'Execute', ...
 %        'open(vifile);');
-  end
   
-  invoke(handles.video.actx(i), 'Execute', ...
-     'start(vi);');
+    invoke(handles.video.actx(i), 'Execute', ...
+       'start(vi);');
+  end
 end
 
 
