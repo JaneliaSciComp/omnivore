@@ -218,7 +218,11 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInFileFormat,'enable','on');
   set(handles.AnalogInNumChannels,'enable','on');
   set(handles.AnalogInChannel,'enable','on');
-  set(handles.AnalogInStyle,'enable','on');
+  if(handles.analog.in.style==4)
+    set(handles.AnalogInChannel,'enable','off');
+  else
+    set(handles.AnalogInChannel,'enable','on');
+  end
   set(handles.AnalogInFs,'enable','on');
   set(handles.AnalogInXScale,'enable','on');
   set(handles.AnalogInYScale,'enable','on');
@@ -292,6 +296,8 @@ else
 end
 
 set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
+
+colormap(handles.figure1,gray);
 
 
 % ---
@@ -684,7 +690,31 @@ if(~isempty(last_timestamp))
 end
 last_timestamp=evt.TimeStamps(end);
 
-plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
+switch handles.analog.in.style
+  case 1
+    plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
+  case 2
+    [pxx f]=pwelch(evt.Data(:,handles.analog.in.curr),[],[],[],handles.analog.in.fs);
+    plot(handles.AnalogInPlot,f,20*log10(pxx),'k-');
+    xlabel(handles.AnalogInPlot,'frequency (Hz)');
+    ylabel(handles.AnalogInPlot,'intensity (dB)');
+  case 3
+    [~,f,t,p]=spectrogram(evt.Data(:,handles.analog.in.curr),...
+        2^nextpow2(round(1e-3*handles.analog.in.fs)),[],[],handles.analog.in.fs,'yaxis');
+    tmp=imadjust(log10(abs(p)));
+    surf(handles.AnalogInPlot,t,f,tmp,'EdgeColor','none');
+    %h=surf(t+left-0.025,f-f(2)/2,tmp,'EdgeColor','none');
+    %uistack(h,'bottom');
+    view(handles.AnalogInPlot,2);
+  case 4
+    tmp=[];
+    for(i=1:handles.analog.in.n)
+      foo=mean(evt.Data(:,i));
+      tmp(i)=sqrt(mean((evt.Data(:,i)-foo).^2));
+    end
+    bar(handles.AnalogInPlot,1:handles.analog.in.n,tmp,'k');
+end
+
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
