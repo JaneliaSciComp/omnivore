@@ -93,7 +93,7 @@ handles.video.counter=1;
 handles.video.timestamps=1;
 handles.video.fileformat=1;
 handles.video.filequality=nan;
-jandles.video.params={};
+handles.video.params={};
 handles.running=0;
 handles.filename='';
 handles.timelimit=0;
@@ -721,7 +721,7 @@ switch(handles.video.fileformats_available{handles.video.fileformat})
 end
 
 for i=1:handles.video.n
-  handles.video.actx(i) = actxserver('Matlab.Application.Single');
+  handles.video.actx(i) = actxserver('Matlab.Application.Single.8.1');
   invoke(handles.video.actx(i), 'Execute', ...
       ['cd ' pwd]);
     
@@ -741,14 +741,12 @@ for i=1:handles.video.n
   invoke(handles.video.actx(i), 'Execute', ...
       ['triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
 
-  if(handles.video.save(i))  % hack
+  if(handles.video.save(i))  % Pip's hack
     invoke(handles.video.actx(i), 'Execute', ...
         ['vifile=VideoWriter(tempname,''' ...
         handles.video.fileformats_available{handles.video.fileformat} ''');']);
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);']);
-%     invoke(handles.video.actx(i), 'Execute', ...
-%        'open(vifile);');
     invoke(handles.video.actx(i), 'Execute', ...
        'start(vi);  pause(1);  stop(vi);');
     invoke(handles.video.actx(i), 'Execute', ...
@@ -802,9 +800,6 @@ for i=1:handles.video.n
       invoke(handles.video.actx(i), 'Execute', ...
           'set(vi,''LoggingMode'',''disk&memory'',''DiskLogger'',vifile);');
     end
-%     invoke(handles.video.actx(i), 'Execute', ...
-%        'open(vifile);');
-  
     invoke(handles.video.actx(i), 'Execute', ...
        'start(vi);');
   end
@@ -1007,7 +1002,7 @@ if(~handles.running)
 
   guidata(hObject, handles);
 
-  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+  if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
     clear av_video_callback
     handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
@@ -1030,7 +1025,7 @@ if(~handles.running)
 %   end
 
 elseif(handles.running)
-  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+  if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
     handles.analog.session.stop();
     handles.analog.session.IsContinuous=false;
   end
@@ -1720,6 +1715,7 @@ function VideoFormat_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoFormat
 
 handles.video.formatvalue(handles.video.curr)=get(handles.VideoFormat,'value');
+handles.video.params{handles.video.curr}=[];
 update_figure(handles);
 guidata(hObject,handles);
 
