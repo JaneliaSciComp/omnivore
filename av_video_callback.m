@@ -32,7 +32,7 @@ switch timestamps
       cycle_offset=uint16(bitand(tmp(3),8+4+2+1)*2^8) + ...
                    uint16(bitand(tmp(4),255));
       ts(i)=double(second_count) + double(cycle_count)/8000 + 125e-6*double(cycle_offset)/3072;
-
+      
 %       tmp=data(1,5:8,1,i);
 %       fn(i)=uint32(tmp(1))*2^24 + uint32(tmp(2))*2^16 + uint32(tmp(3))*2^8 + uint32(tmp(4));
     end
