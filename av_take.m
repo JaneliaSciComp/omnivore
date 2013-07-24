@@ -57,6 +57,9 @@ handles.analog.out.fs=[];
 handles.analog.out.y={};
 handles.analog.out.idx=[];
 handles.analog.out.style=1;
+handles.analog.out.autoscale=1;
+handles.analog.out.logscale=1;
+handles.analog.out.onepercent=1;
 handles.analog.out.range=1;
 handles.analog.in.on=0;
 handles.analog.in.maxn=nan;
@@ -66,6 +69,9 @@ handles.analog.in.record=0;
 handles.analog.in.directory='';
 handles.analog.in.fs=nan;
 handles.analog.in.style=1;
+handles.analog.in.autoscale=1;
+handles.analog.in.logscale=1;
+handles.analog.in.onepercent=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
 handles.analog.in.fileformat=1;
@@ -115,6 +121,9 @@ handles.analog.out.y=handles_saved.analog.out.y;
 handles.analog.out.fs=handles_saved.analog.out.fs;
 handles.analog.out.idx=handles_saved.analog.out.idx;
 handles.analog.out.style=handles_saved.analog.out.style;
+handles.analog.out.autoscale=handles_saved.analog.out.autoscale;
+handles.analog.out.logscale=handles_saved.analog.out.logscale;
+handles.analog.out.onepercent=handles_saved.analog.out.onepercent;
 handles.analog.out.range=handles_saved.analog.out.range;
 handles.analog.in.on=handles_saved.analog.in.on;
 handles.analog.in.maxn=handles_saved.analog.in.maxn;
@@ -124,6 +133,9 @@ handles.analog.in.record=handles_saved.analog.in.record;
 handles.analog.in.directory=handles_saved.analog.in.directory;
 handles.analog.in.fs=handles_saved.analog.in.fs;
 handles.analog.in.style=handles_saved.analog.in.style;
+handles.analog.in.autoscale=handles_saved.analog.in.autoscale;
+handles.analog.in.logscale=handles_saved.analog.in.logscale;
+handles.analog.in.onepercent=handles_saved.analog.in.onepercent;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
 handles.analog.in.fileformat=handles_saved.analog.in.fileformat;
@@ -157,7 +169,19 @@ handles.verbose=handles_saved.verbose;
 % ---
 function update_figure(handles)
 
-set(handles.AnalogOutOnOff,'value',handles.analog.out.on,'enable','on');
+set(handles.AnalogOutOnOff,'value',handles.analog.out.on);
+set(handles.AnalogOutOnOff,'enable','off');
+set(handles.AnalogOutPlay,'enable','off');
+set(handles.AnalogOutNumChannels,'enable','off');
+set(handles.AnalogOutChannel,'enable','off');
+set(handles.AnalogOutRange,'enable','off');
+set(handles.AnalogOutAutoScale,'enable','off');
+set(handles.AnalogOutLogScale,'enable','off');
+set(handles.AnalogOutOnePercent,'enable','off');
+set(handles.AnalogOutHighFreq,'enable','off');
+set(handles.AnalogOutLowFreq,'enable','off');
+set(handles.AnalogOutFile,'enable','off');
+set(handles.AnalogOutStyle,'enable','off');
 if(handles.analog.out.on && (handles.analog.out.maxn>0))
   set(handles.AnalogOutNumChannels,'string',handles.analog.out.n);
   set(handles.AnalogOutChannel,'string',[1:handles.analog.out.n]);
@@ -174,26 +198,42 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
     set(handles.AnalogOutPlay,'value',0);
   end
   set(handles.AnalogOutStyle,'value',handles.analog.out.style);
-  set(handles.AnalogOutPlay,'enable','on');
-  set(handles.AnalogOutFile,'enable','on');
-  set(handles.AnalogOutNumChannels,'enable','on');
+  if(~handles.running)
+    set(handles.AnalogOutPlay,'enable','on');
+    set(handles.AnalogOutNumChannels,'enable','on');
+    set(handles.AnalogOutRange,'enable','on');
+  end
   set(handles.AnalogOutChannel,'enable','on');
+  set(handles.AnalogOutFile,'enable','on');
   set(handles.AnalogOutStyle,'enable','on');
-  set(handles.AnalogOutXScale,'enable','on');
-  set(handles.AnalogOutYScale,'enable','on');
-  set(handles.AnalogOutRange,'enable','on');
-else
-  set(handles.AnalogOutPlay,'enable','off');
-  set(handles.AnalogOutFile,'enable','off');
-  set(handles.AnalogOutNumChannels,'enable','off');
-  set(handles.AnalogOutChannel,'enable','off');
-  set(handles.AnalogOutStyle,'enable','off');
-  set(handles.AnalogOutXScale,'enable','off');
-  set(handles.AnalogOutYScale,'enable','off');
-  set(handles.AnalogOutRange,'enable','off');
+  if(handles.analog.out.style==1)
+    set(handles.AnalogOutAutoScale,'enable','on');
+  else
+    set(handles.AnalogOutLogScale,'enable','on');
+  end
+  if(handles.analog.out.style==3)
+    set(handles.AnalogOutOnePercent,'enable','on');
+    set(handles.AnalogOutHighFreq,'enable','on');
+    set(handles.AnalogOutLowFreq,'enable','on');
+  end
 end
 
-set(handles.AnalogInOnOff,'value',handles.analog.in.on,'enable','on');
+set(handles.AnalogInOnOff,'value',handles.analog.in.on);
+set(handles.AnalogInOnOff,'enable','off');
+set(handles.AnalogInRecord,'enable','off');
+set(handles.AnalogInNumChannels,'enable','off');
+set(handles.AnalogInChannel,'enable','off');
+set(handles.AnalogInFs,'enable','off');
+set(handles.AnalogInRange,'enable','off');
+set(handles.AnalogInTerminalConfiguration,'enable','off');
+set(handles.AnalogInFileFormat,'enable','off');
+set(handles.AnalogInAutoScale,'enable','off');
+set(handles.AnalogInLogScale,'enable','off');
+set(handles.AnalogInOnePercent,'enable','off');
+set(handles.AnalogInHighFreq,'enable','off');
+set(handles.AnalogInLowFreq,'enable','off');
+set(handles.AnalogInDirectory,'enable','off');
+set(handles.AnalogInStyle,'enable','off');
 if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInNumChannels,'string',handles.analog.in.n);
   set(handles.AnalogInChannel,'string',[1:handles.analog.in.n]);
@@ -211,44 +251,52 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
     set(handles.AnalogInRecord,'value',0);
   end
   set(handles.AnalogInStyle,'value',handles.analog.in.style);
-  set(handles.AnalogInRecord,'enable','on');
-  set(handles.AnalogInDirectory,'enable','on');
-  set(handles.AnalogInTerminalConfiguration,'enable','on');
-  set(handles.AnalogInRange,'enable','on');
-  set(handles.AnalogInFileFormat,'enable','on');
-  set(handles.AnalogInNumChannels,'enable','on');
+  if(~handles.running)
+    set(handles.AnalogInRecord,'enable','on');
+    set(handles.AnalogInNumChannels,'enable','on');
+    set(handles.AnalogInChannel,'enable','on');
+    set(handles.AnalogInFs,'enable','on');
+    set(handles.AnalogInTerminalConfiguration,'enable','on');
+    set(handles.AnalogInRange,'enable','on');
+    set(handles.AnalogInFileFormat,'enable','on');
+  end
   set(handles.AnalogInChannel,'enable','on');
+  set(handles.AnalogInDirectory,'enable','on');
+  set(handles.AnalogInStyle,'enable','on');
   if(handles.analog.in.style==4)
     set(handles.AnalogInChannel,'enable','off');
   else
     set(handles.AnalogInChannel,'enable','on');
   end
-  set(handles.AnalogInFs,'enable','on');
-  set(handles.AnalogInXScale,'enable','on');
-  set(handles.AnalogInYScale,'enable','on');
-else
-  set(handles.AnalogInRecord,'enable','off');
-  set(handles.AnalogInDirectory,'enable','off');
-  set(handles.AnalogInTerminalConfiguration,'enable','off');
-  set(handles.AnalogInRange,'enable','off');
-  set(handles.AnalogInFileFormat,'enable','off');
-  set(handles.AnalogInNumChannels,'enable','off');
-  set(handles.AnalogInChannel,'enable','off');
-  set(handles.AnalogInStyle,'enable','off');
-  set(handles.AnalogInFs,'enable','off');
-  set(handles.AnalogInXScale,'enable','off');
-  set(handles.AnalogInYScale,'enable','off');
+  if(handles.analog.in.style==1)
+    set(handles.AnalogInAutoScale,'enable','on');
+  else
+    set(handles.AnalogInLogScale,'enable','on');
+  end
+  if(handles.analog.in.style==3)
+    set(handles.AnalogInOnePercent,'enable','on');
+    set(handles.AnalogInHighFreq,'enable','on');
+    set(handles.AnalogInLowFreq,'enable','on');
+  end
 end
 
-set(handles.VideoOnOff,'value',handles.video.on,'enable','on');
-set(handles.VideoParams,'enable','off');
+set(handles.VideoOnOff,'value',handles.video.on);
+set(handles.VideoOnOff,'enable','off');
+set(handles.VideoSave,'enable','off');
+set(handles.VideoFormat,'enable','off');
+set(handles.VideoTimeStamps,'enable','off');
+set(handles.VideoROI,'enable','off');
+set(handles.VideoFPS,'enable','off');
+set(handles.VideoNumChannels,'enable','off');
+set(handles.VideoTrigger,'enable','off');
+set(handles.VideoFileFormat,'enable','off');
+set(handles.VideoFileQuality,'enable','off');
+set(handles.VideoParams,'enable','on');
+set(handles.VideoHistogram,'enable','off');
+set(handles.VerboseLevel,'enable','off');
 set_videoquality_tooltip_str(handles);
+set(handles.VideoChannel,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
-  if handles.running
-    set(handles.VideoHistogram,'enable','on');
-  else
-    set(handles.VideoHistogram,'enable','off');
-  end
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
   set(handles.VideoNumChannels,'string',handles.video.n);
@@ -274,28 +322,29 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFileQuality,'string',handles.video.filequality);
   set(handles.VideoParams,'data',handles.video.params{handles.video.curr});
   set(handles.VideoParams,'enable','on');
-  set(handles.VideoSave,'enable','on');
-  set(handles.VideoFPS,'enable','on');
-  set(handles.VideoROI,'enable','on');
-  set(handles.VideoNumChannels,'enable','on');
+  if(~handles.running)
+    set(handles.VideoSave,'enable','on');
+    set(handles.VideoFormat,'enable','on');
+    set(handles.VideoTimeStamps,'enable','on');
+    set(handles.VideoFPS,'enable','on');
+    set(handles.VideoROI,'enable','on');
+    set(handles.VideoNumChannels,'enable','on');
+    set(handles.VideoTrigger,'enable','on');
+    set(handles.VideoFileFormat,'enable','on');
+    set(handles.VideoFileQuality,'enable','on');
+  else
+    set(handles.VideoHistogram,'enable','on');
+  end
   set(handles.VideoChannel,'enable','on');
-  set(handles.VideoTimeStamps,'enable','on');
-  set(handles.VideoFormat,'enable','on');
-  set(handles.VideoTrigger,'enable','on');
-  set(handles.VideoFileFormat,'enable','on');
-else
-  set(handles.VideoSave,'enable','off');
-  set(handles.VideoFPS,'enable','off');
-  set(handles.VideoROI,'enable','off');
-  set(handles.VideoNumChannels,'enable','off');
-  set(handles.VideoChannel,'enable','off');
-  set(handles.VideoTimeStamps,'enable','off');
-  set(handles.VideoFormat,'enable','off');
-  set(handles.VideoTrigger,'enable','off');
-  set(handles.VideoFileFormat,'enable','off');
 end
 
-set(handles.VerboseLevel,'enable','on','value',handles.verbose+1);
+set(handles.VerboseLevel,'enable','off','value',handles.verbose+1);
+if(~handles.running)
+  set(handles.VerboseLevel,'enable','on');
+  set(handles.AnalogInOnOff,'enable','on');
+  set(handles.AnalogOutOnOff,'enable','on');
+  set(handles.VideoOnOff,'enable','on');
+end
 
 colormap(handles.figure1,gray);
 
@@ -612,6 +661,75 @@ varargout{1} = handles.output;
 
 
 % --- 
+function analog_plot(haxis, data, hanalog)
+
+fs=nanmax(hanalog.fs);
+
+switch hanalog.style
+  case 1
+    plot(haxis,(1:size(data,1))./fs,data(:,hanalog.curr),'k-');
+    axis(haxis,'tight');
+    if(~hanalog.autoscale)
+    end
+    xlabel(haxis,'time (sec)');
+    ylabel(haxis,'pressure (volts)');
+  case 2
+    [pxx f]=pwelch(data(:,hanalog.curr),[],[],[],fs);
+    if(hanalog.logscale)
+      pxx=log10(pxx);
+    end
+    x_txt='frequency (Hz)';
+    if(f(end)>10e3)
+      f=f./1000;
+      x_txt='frequency (kHz)';
+    end
+    plot(haxis,f,pxx,'k-');
+    axis(haxis,'tight');
+    xlabel(haxis,x_txt);
+    ylabel(haxis,'intensity (dB)');
+  case 3
+    [~,f,t,p]=spectrogram(data(:,hanalog.curr),...
+        2^nextpow2(round(1e-3*fs)),[],[],fs,'yaxis');
+    tmp=abs(p);
+    if(hanalog.logscale)
+      tmp=log10(tmp);
+    end
+    if(hanalog.onepercent)
+      tmp4=reshape(tmp,1,prod(size(tmp)));
+      tmp2=prctile(tmp4,1);
+      tmp3=prctile(tmp4,99);
+      idx=find(tmp<tmp2);  tmp(idx)=tmp2;
+      idx=find(tmp>tmp3);  tmp(idx)=tmp3;
+    end
+    y_txt='frequency (Hz)';
+    if(f(end)>10e3)
+      f=f./1000;
+      y_txt='frequency (kHz)';
+    end
+    surf(haxis,t,f,tmp,'EdgeColor','none');
+    %h=surf(t+left-0.025,f-f(2)/2,tmp,'EdgeColor','none');
+    %uistack(h,'bottom');
+    view(haxis,2);
+    axis(haxis,'tight');
+    xlabel(haxis,'time (sec)');
+    ylabel(haxis,y_txt);
+  case 4
+    tmp=[];
+    for(i=1:hanalog.n)
+      foo=mean(data(:,i));
+      tmp(i)=mean((data(:,i)-foo).^2);
+    end
+    if(hanalog.logscale)
+      tmp=log10(tmp);
+    end
+    bar(haxis,1:hanalog.n,tmp,'k');
+    axis(haxis,'tight');
+    xlabel(haxis,'channel #');
+    ylabel(haxis,'RMS power');
+end
+
+
+% --- 
 function analog_out_callback(src,evt,hObject)
 
 handles=guidata(hObject);
@@ -633,19 +751,9 @@ for i=1:handles.analog.out.n
       handles.analog.out.idx(i)=idx+1;
     end
   end
-  if(i==handles.analog.out.curr)
-    switch(handles.analog.out.style)
-      case 1
-        plot(handles.AnalogOutPlot,out(:,i),'k-');
-      case 2
-        [pxx f]=pwelch(out(:,i)',[],[],[],handles.analog.fs);
-        plot(handles.AnalogOutPlot,f,20*log10(pxx),'k-');
-      case 3
-    end
-    axis(handles.AnalogOutPlot,'tight');
-    axis(handles.AnalogOutPlot,'off');
-  end
 end
+
+analog_plot(handles.AnalogOutPlot, out, handles.analog.out);
 
 handles.analog.session.queueOutputData(out);
 
@@ -690,30 +798,7 @@ if(~isempty(last_timestamp))
 end
 last_timestamp=evt.TimeStamps(end);
 
-switch handles.analog.in.style
-  case 1
-    plot(handles.AnalogInPlot,evt.Data(:,handles.analog.in.curr),'k-');
-  case 2
-    [pxx f]=pwelch(evt.Data(:,handles.analog.in.curr),[],[],[],handles.analog.in.fs);
-    plot(handles.AnalogInPlot,f,20*log10(pxx),'k-');
-    xlabel(handles.AnalogInPlot,'frequency (Hz)');
-    ylabel(handles.AnalogInPlot,'intensity (dB)');
-  case 3
-    [~,f,t,p]=spectrogram(evt.Data(:,handles.analog.in.curr),...
-        2^nextpow2(round(1e-3*handles.analog.in.fs)),[],[],handles.analog.in.fs,'yaxis');
-    tmp=imadjust(log10(abs(p)));
-    surf(handles.AnalogInPlot,t,f,tmp,'EdgeColor','none');
-    %h=surf(t+left-0.025,f-f(2)/2,tmp,'EdgeColor','none');
-    %uistack(h,'bottom');
-    view(handles.AnalogInPlot,2);
-  case 4
-    tmp=[];
-    for(i=1:handles.analog.in.n)
-      foo=mean(evt.Data(:,i));
-      tmp(i)=sqrt(mean((evt.Data(:,i)-foo).^2));
-    end
-    bar(handles.AnalogInPlot,1:handles.analog.in.n,tmp,'k');
-end
+analog_plot(handles.AnalogInPlot, evt.Data, handles.analog.in);
 
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
@@ -926,31 +1011,6 @@ if(~handles.running)
 
   handles.running=1;
   set(handles.StartStop,'string','stop','backgroundColor',[1 0 0]);
-  set(handles.AnalogOutOnOff,'enable','off');
-  set(handles.AnalogOutPlay,'enable','off');
-  set(handles.AnalogOutNumChannels,'enable','off');
-  set(handles.AnalogOutRange,'enable','off');
-  set(handles.AnalogInOnOff,'enable','off');
-  set(handles.AnalogInRecord,'enable','off');
-  set(handles.AnalogInNumChannels,'enable','off');
-  set(handles.AnalogInFs,'enable','off');
-  set(handles.AnalogInRange,'enable','off');
-  set(handles.AnalogInTerminalConfiguration,'enable','off');
-  set(handles.AnalogInFileFormat,'enable','off');
-  set(handles.VideoOnOff,'enable','off');
-  set(handles.VideoSave,'enable','off');
-  set(handles.VideoFormat,'enable','off');
-  set(handles.VideoTimeStamps,'enable','off');
-  set(handles.VideoROI,'enable','off');
-  set(handles.VideoFPS,'enable','off');
-  set(handles.VideoNumChannels,'enable','off');
-  set(handles.VideoTrigger,'enable','off');
-  set(handles.VideoFileFormat,'enable','off');
-  set(handles.VideoFileQuality,'enable','off');
-  set(handles.VideoParams,'enable','on');
-  set(handles.VideoHistogram,'enable','on');
-  set(handles.VerboseLevel,'enable','off');
-  drawnow('expose');
   
   if(handles.analog.in.on)
     clear analog_in_callback
@@ -1096,9 +1156,9 @@ elseif(handles.running)
 
   set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
   handles.running=0;
-  update_figure(handles);
 end
 
+update_figure(handles);
 guidata(hObject, handles);
 
 set(handles.StartStop,'enable','on');  drawnow('expose');
@@ -1129,15 +1189,8 @@ end
 
 
 % --------------------------------------------------------------------
-function MenuFile_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function MenuFileLoad_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFileLoad (see GCBO)
+function Load_Callback(hObject, eventdata, handles)
+% hObject    handle to Load (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -1149,19 +1202,25 @@ guidata(hObject, handles);
 
 
 % --------------------------------------------------------------------
-function MenuFileSave_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFileSave (see GCBO)
+function Save_Callback(hObject, eventdata, handles)
+% hObject    handle to Save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 [file,path]=uiputfile('*.mat','Select file to save configuration to');
 if(isnumeric(file) && isnumeric(path) && (file==0) && (path==0))  return;  end
+tmp={'timer','daqdevices','videoadaptors'};
+idx=isfield(handles,tmp);
+handles=rmfield(handles,tmp(idx));
+if(isfield(handles.analog,'session'))
+  handles.analog=rmfield(handles.analog,'session');
+end
 save(fullfile(path,file),'handles');
 
 
 % --------------------------------------------------------------------
-function MenuFileReset_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFileReset (see GCBO)
+function Reset_Callback(hObject, eventdata, handles)
+% hObject    handle to Reset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -1224,18 +1283,21 @@ end
 
 
 % --- Executes on slider movement.
-function AnalogOutYScale_Callback(hObject, eventdata, handles)
-% hObject    handle to AnalogOutYScale (see GCBO)
+function AnalogOutAutoScale_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutAutoScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
+handles.analog.out.autoscale=~handles.analog.out.autoscale;
+guidata(hObject,handles);
+
 
 % --- Executes during object creation, after setting all properties.
-function AnalogOutYScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to AnalogOutYScale (see GCBO)
+function AnalogOutAutoScale_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutAutoScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1246,18 +1308,46 @@ end
 
 
 % --- Executes on slider movement.
-function AnalogOutXScale_Callback(hObject, eventdata, handles)
-% hObject    handle to AnalogOutXScale (see GCBO)
+function AnalogOutLogScale_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutLogScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
+handles.analog.out.logscale=~handles.analog.out.logscale;
+guidata(hObject,handles);
+
 
 % --- Executes during object creation, after setting all properties.
-function AnalogOutXScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to AnalogOutXScale (see GCBO)
+function AnalogOutLogScale_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutLogScale (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on slider movement.
+function AnalogOutOnePercent_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutOnePercent (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+handles.analog.out.onepercent=~handles.analog.out.onepercent;
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogOutOnePercent_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutOnePercent (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1493,18 +1583,21 @@ end
 
 
 % --- Executes on slider movement.
-function AnalogInYScale_Callback(hObject, eventdata, handles)
-% hObject    handle to AnalogInYScale (see GCBO)
+function AnalogInAutoScale_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInAutoScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
+handles.analog.in.autoscale=~handles.analog.in.autoscale;
+guidata(hObject,handles);
+
 
 % --- Executes during object creation, after setting all properties.
-function AnalogInYScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to AnalogInYScale (see GCBO)
+function AnalogInAutoScale_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInAutoScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1515,18 +1608,46 @@ end
 
 
 % --- Executes on slider movement.
-function AnalogInXScale_Callback(hObject, eventdata, handles)
-% hObject    handle to AnalogInXScale (see GCBO)
+function AnalogInLogScale_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInLogScale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
+handles.analog.in.logscale=~handles.analog.in.logscale;
+guidata(hObject,handles);
+
 
 % --- Executes during object creation, after setting all properties.
-function AnalogInXScale_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to AnalogInXScale (see GCBO)
+function AnalogInLogScale_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInLogScale (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on slider movement.
+function AnalogInOnePercent_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInOnePercent (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+handles.analog.in.onepercent=~handles.analog.in.onepercent;
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogInOnePercent_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInOnePercent (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1951,7 +2072,6 @@ guidata(hObject, handles);
 
 function set_videoquality_tooltip_str(handles)
 
-set(handles.VideoFileQuality,'enable','on');
 switch(handles.video.fileformats_available{handles.video.fileformat})
   case {'Motion JPEG AVI','MPEG-4'}
     set(handles.VideoFileQuality,'tooltipstring','quality (1-100)');
