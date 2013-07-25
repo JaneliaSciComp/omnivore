@@ -57,9 +57,12 @@ handles.analog.out.fs=[];
 handles.analog.out.y={};
 handles.analog.out.idx=[];
 handles.analog.out.style=1;
-handles.analog.out.autoscale=1;
-handles.analog.out.logscale=1;
-handles.analog.out.onepercent=1;
+handles.analog.out.autoscale=0;
+handles.analog.out.logscale=0;
+handles.analog.out.onepercent=0;
+handles.analog.out.lowfreq=nan;
+handles.analog.out.highfreq=nan;
+handles.analog.out.nfft=1;
 handles.analog.out.range=1;
 handles.analog.in.on=0;
 handles.analog.in.maxn=nan;
@@ -69,9 +72,12 @@ handles.analog.in.record=0;
 handles.analog.in.directory='';
 handles.analog.in.fs=nan;
 handles.analog.in.style=1;
-handles.analog.in.autoscale=1;
-handles.analog.in.logscale=1;
-handles.analog.in.onepercent=1;
+handles.analog.in.autoscale=0;
+handles.analog.in.logscale=0;
+handles.analog.in.onepercent=0;
+handles.analog.in.lowfreq=nan;
+handles.analog.in.highfreq=nan;
+handles.analog.in.nfft=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
 handles.analog.in.fileformat=1;
@@ -124,6 +130,9 @@ handles.analog.out.style=handles_saved.analog.out.style;
 handles.analog.out.autoscale=handles_saved.analog.out.autoscale;
 handles.analog.out.logscale=handles_saved.analog.out.logscale;
 handles.analog.out.onepercent=handles_saved.analog.out.onepercent;
+handles.analog.out.lowfreq=handles_saved.analog.out.lowfreq;
+handles.analog.out.highfreq=handles_saved.analog.out.highfreq;
+handles.analog.out.nfft=handles_saved.analog.out.nfft;
 handles.analog.out.range=handles_saved.analog.out.range;
 handles.analog.in.on=handles_saved.analog.in.on;
 handles.analog.in.maxn=handles_saved.analog.in.maxn;
@@ -136,6 +145,9 @@ handles.analog.in.style=handles_saved.analog.in.style;
 handles.analog.in.autoscale=handles_saved.analog.in.autoscale;
 handles.analog.in.logscale=handles_saved.analog.in.logscale;
 handles.analog.in.onepercent=handles_saved.analog.in.onepercent;
+handles.analog.in.lowfreq=handles_saved.analog.in.lowfreq;
+handles.analog.in.highfreq=handles_saved.analog.in.highfreq;
+handles.analog.in.nfft=handles_saved.analog.in.nfft;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
 handles.analog.in.fileformat=handles_saved.analog.in.fileformat;
@@ -180,6 +192,7 @@ set(handles.AnalogOutLogScale,'enable','off');
 set(handles.AnalogOutOnePercent,'enable','off');
 set(handles.AnalogOutHighFreq,'enable','off');
 set(handles.AnalogOutLowFreq,'enable','off');
+set(handles.AnalogOutNFFT,'enable','off');
 set(handles.AnalogOutFile,'enable','off');
 set(handles.AnalogOutStyle,'enable','off');
 if(handles.analog.out.on && (handles.analog.out.maxn>0))
@@ -187,6 +200,12 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
   set(handles.AnalogOutChannel,'string',[1:handles.analog.out.n]);
   set(handles.AnalogOutChannel,'value',handles.analog.out.curr);
   set(handles.AnalogOutRange,'value',handles.analog.out.range);
+  set(handles.AnalogOutAutoScale,'value',handles.analog.out.autoscale);
+  set(handles.AnalogOutLogScale,'value',handles.analog.out.logscale);
+  set(handles.AnalogOutOnePercent,'value',handles.analog.out.onepercent);
+  set(handles.AnalogOutHighFreq,'string',handles.analog.out.highfreq);
+  set(handles.AnalogOutLowFreq,'string',handles.analog.out.lowfreq);
+  set(handles.AnalogOutNFFT,'string',handles.analog.out.nfft);
   set(handles.AnalogOutFile,'string',handles.analog.out.file{handles.analog.out.curr});
   find([handles.analog.out.play],1,'first');
   set(handles.AnalogOutFs,'string',num2str(handles.analog.out.fs(ans)));
@@ -213,6 +232,9 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
   end
   if(handles.analog.out.style==3)
     set(handles.AnalogOutOnePercent,'enable','on');
+    set(handles.AnalogOutNFFT,'enable','on');
+  end
+  if(ismember(handles.analog.out.style,[2 3]))
     set(handles.AnalogOutHighFreq,'enable','on');
     set(handles.AnalogOutLowFreq,'enable','on');
   end
@@ -232,6 +254,7 @@ set(handles.AnalogInLogScale,'enable','off');
 set(handles.AnalogInOnePercent,'enable','off');
 set(handles.AnalogInHighFreq,'enable','off');
 set(handles.AnalogInLowFreq,'enable','off');
+set(handles.AnalogInNFFT,'enable','off');
 set(handles.AnalogInDirectory,'enable','off');
 set(handles.AnalogInStyle,'enable','off');
 if(handles.analog.in.on && (handles.analog.in.maxn>0))
@@ -243,6 +266,12 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   set(handles.AnalogInFileFormat,'value',handles.analog.in.fileformat);
   set(handles.AnalogInDirectory,'string',handles.analog.in.directory);
   set(handles.AnalogInFs,'string',num2str(handles.analog.in.fs));
+  set(handles.AnalogInAutoScale,'value',handles.analog.in.autoscale);
+  set(handles.AnalogInLogScale,'value',handles.analog.in.logscale);
+  set(handles.AnalogInOnePercent,'value',handles.analog.in.onepercent);
+  set(handles.AnalogInHighFreq,'string',handles.analog.in.highfreq);
+  set(handles.AnalogInLowFreq,'string',handles.analog.in.lowfreq);
+  set(handles.AnalogInNFFT,'string',handles.analog.in.nfft);
   if(handles.analog.in.record)
     set(handles.AnalogInDirectory,'enable','on');
     set(handles.AnalogInRecord,'value',1);
@@ -275,6 +304,9 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   end
   if(handles.analog.in.style==3)
     set(handles.AnalogInOnePercent,'enable','on');
+    set(handles.AnalogInNFFT,'enable','on');
+  end
+  if(ismember(handles.analog.in.style,[2 3]))
     set(handles.AnalogInHighFreq,'enable','on');
     set(handles.AnalogInLowFreq,'enable','on');
   end
@@ -344,6 +376,11 @@ if(~handles.running)
   set(handles.AnalogInOnOff,'enable','on');
   set(handles.AnalogOutOnOff,'enable','on');
   set(handles.VideoOnOff,'enable','on');
+end
+
+set(handles.StartStop,'enable','off');
+if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+  set(handles.StartStop,'enable','on');
 end
 
 colormap(handles.figure1,gray);
@@ -670,6 +707,10 @@ switch hanalog.style
     plot(haxis,(1:size(data,1))./fs,data(:,hanalog.curr),'k-');
     axis(haxis,'tight');
     if(~hanalog.autoscale)
+      v=axis(haxis);
+      axis(haxis,[v(1) v(2) ...
+          hanalog.ranges_available(hanalog.range).Min ...
+          hanalog.ranges_available(hanalog.range).Max]);
     end
     xlabel(haxis,'time (sec)');
     ylabel(haxis,'pressure (volts)');
@@ -683,14 +724,16 @@ switch hanalog.style
       f=f./1000;
       x_txt='frequency (kHz)';
     end
-    plot(haxis,f,pxx,'k-');
+    idx=find((f>nanmax(hanalog.lowfreq,0)) & (f<nanmin(hanalog.highfreq,fs/2)));
+    plot(haxis,f(idx),pxx(idx),'k-');
     axis(haxis,'tight');
     xlabel(haxis,x_txt);
     ylabel(haxis,'intensity (dB)');
   case 3
-    [~,f,t,p]=spectrogram(data(:,hanalog.curr),...
-        2^nextpow2(round(1e-3*fs)),[],[],fs,'yaxis');
-    tmp=abs(p);
+    nfft=2^nextpow2(round(hanalog.nfft/1000*fs));
+    [~,f,t,p]=spectrogram(data(:,hanalog.curr),nfft,[],[],fs,'yaxis');
+    fidx=find((f>nanmax(hanalog.lowfreq,0)) & (f<nanmin(hanalog.highfreq,fs/2)));
+    tmp=abs(p(fidx,:));
     if(hanalog.logscale)
       tmp=log10(tmp);
     end
@@ -706,7 +749,7 @@ switch hanalog.style
       f=f./1000;
       y_txt='frequency (kHz)';
     end
-    surf(haxis,t,f,tmp,'EdgeColor','none');
+    surf(haxis,t,f(fidx),tmp,'EdgeColor','none');
     %h=surf(t+left-0.025,f-f(2)/2,tmp,'EdgeColor','none');
     %uistack(h,'bottom');
     view(haxis,2);
@@ -1357,6 +1400,81 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
+function AnalogOutLowFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutLowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogOutLowFreq as text
+%        str2double(get(hObject,'String')) returns contents of AnalogOutLowFreq as a double
+
+handles.analog.out.lowfreq=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogOutLowFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutLowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function AnalogOutHighFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutHighFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogOutHighFreq as text
+%        str2double(get(hObject,'String')) returns contents of AnalogOutHighFreq as a double
+
+handles.analog.out.highfreq=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogOutHighFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutHighFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function AnalogOutNFFT_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogOutNFFT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogOutNFFT as text
+%        str2double(get(hObject,'String')) returns contents of AnalogOutNFFT as a double
+
+handles.analog.out.nfft=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogOutNFFT_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogOutNFFT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
 % --- Executes when selected object is changed in AnalogOutStyle.
 function AnalogOutStyle_Callback(hObject, eventdata, handles)
 % hObject    handle to AnalogOutStyle (see GCBO)
@@ -1498,6 +1616,81 @@ guidata(hObject, handles);
 % --- Executes during object creation, after setting all properties.
 function AnalogInFs_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to AnalogInFs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function AnalogInLowFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInLowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogInLowFreq as text
+%        str2double(get(hObject,'String')) returns contents of AnalogInLowFreq as a double
+
+handles.analog.in.lowfreq=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogInLowFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInLowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function AnalogInHighFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInHighFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogInHighFreq as text
+%        str2double(get(hObject,'String')) returns contents of AnalogInHighFreq as a double
+
+handles.analog.in.highfreq=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogInHighFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInHighFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function AnalogInNFFT_Callback(hObject, eventdata, handles)
+% hObject    handle to AnalogInNFFT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AnalogInNFFT as text
+%        str2double(get(hObject,'String')) returns contents of AnalogInNFFT as a double
+
+handles.analog.in.nfft=str2num(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function AnalogInNFFT_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AnalogInNFFT (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
