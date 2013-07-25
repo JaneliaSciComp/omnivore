@@ -852,11 +852,13 @@ end
 if(handles.analog.in.record)
     switch(handles.analog.in.fileformat)
       case 1
-        fwrite(handles.analog.in.fid,evt.Data','double');
+        fwrite(handles.analog.in.fid,evt.Data','float64');
       case 2
+        fwrite(handles.analog.in.fid,evt.Data','float32');
+      case 3
         d=bsxfun(@minus,evt.Data,handles.analog.in.offset);
         d=bsxfun(@rdivide,d,handles.analog.in.step);
-        fwrite(handles.analog.in.fid,int16(d'),'int16');
+        fwrite(handles.analog.in.fid,d','int16');
     end
 end
 
@@ -1093,8 +1095,10 @@ if(~handles.running)
       switch(handles.analog.in.fileformat)
         case 1  % version#=1, sample rate, nchan, (doubles)
           fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
-        case 2  % version#=2, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
+        case 2  % version#=2, sample rate, nchan, (singles)
           fwrite(handles.analog.in.fid,[2 handles.analog.in.fs handles.analog.in.n],'double');
+        case 3  % version#=3, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
+          fwrite(handles.analog.in.fid,[3 handles.analog.in.fs handles.analog.in.n],'double');
           if(handles.analog.out.on)
             analog_out_callback(hObject, eventdata, handles.figure1);
           end
@@ -1106,14 +1110,13 @@ if(~handles.running)
             handles.analog.in.offset(i)=mean(mod(data(:,i),handles.analog.in.step(i)));
             fwrite(handles.analog.in.fid,[handles.analog.in.step(i) handles.analog.in.offset(i)],'double');
           end
-          questdlg({['steps: ' num2str(handles.analog.in.step)],['offsets: ' num2str(handles.analog.in.offset)]},...
+          questdlg({['steps: ' num2str(handles.analog.in.step,3)],['offsets: ' num2str(handles.analog.in.offset,3)]},...
               'double to int16 conversion','proceed','cancel','proceed');
           if(strcmp(ans,'cancel'))
               fclose(handles.analog.in.fid);
               delete(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']));
-              set(handles.StartStop,'string','start','backgroundColor',[0 1 0],'enable','on');
-              update_figure(handles);
               handles.running=0;
+              update_figure(handles);
               return;
           end
       end
