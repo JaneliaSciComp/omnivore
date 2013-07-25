@@ -181,8 +181,6 @@ handles.verbose=handles_saved.verbose;
 % ---
 function update_figure(handles)
 
-set(handles.AnalogOutOnOff,'value',handles.analog.out.on);
-set(handles.AnalogOutOnOff,'enable','off');
 set(handles.AnalogOutPlay,'enable','off');
 set(handles.AnalogOutNumChannels,'enable','off');
 set(handles.AnalogOutChannel,'enable','off');
@@ -240,8 +238,6 @@ if(handles.analog.out.on && (handles.analog.out.maxn>0))
   end
 end
 
-set(handles.AnalogInOnOff,'value',handles.analog.in.on);
-set(handles.AnalogInOnOff,'enable','off');
 set(handles.AnalogInRecord,'enable','off');
 set(handles.AnalogInNumChannels,'enable','off');
 set(handles.AnalogInChannel,'enable','off');
@@ -312,8 +308,6 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
   end
 end
 
-set(handles.VideoOnOff,'value',handles.video.on);
-set(handles.VideoOnOff,'enable','off');
 set(handles.VideoSave,'enable','off');
 set(handles.VideoFormat,'enable','off');
 set(handles.VideoTimeStamps,'enable','off');
@@ -370,17 +364,25 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoChannel,'enable','on');
 end
 
+set(handles.AnalogOutOnOff,'enable','off','value',handles.analog.out.on);
+set(handles.AnalogInOnOff,'enable','off','value',handles.analog.in.on);
+set(handles.VideoOnOff,'enable','off','value',handles.video.on);
 set(handles.VerboseLevel,'enable','off','value',handles.verbose+1);
 if(~handles.running)
-  set(handles.VerboseLevel,'enable','on');
   set(handles.AnalogInOnOff,'enable','on');
   set(handles.AnalogOutOnOff,'enable','on');
   set(handles.VideoOnOff,'enable','on');
+  set(handles.VerboseLevel,'enable','on');
 end
 
 set(handles.StartStop,'enable','off');
 if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
   set(handles.StartStop,'enable','on');
+end
+if(~handles.running)
+  set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
+else
+  set(handles.StartStop,'string','stop','backgroundColor',[1 0 0]);
 end
 
 colormap(handles.figure1,gray);
@@ -495,20 +497,8 @@ if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(
 end
  
 
-% --- Executes just before av_take is made visible.
-function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to av_take (see VARARGIN)
-
-handles.rcfilename = 'most_recent_av_config.mat';
-if(exist(handles.rcfilename)==2)
-  handles=load_configuration_file(handles.rcfilename,handles);
-else
-  handles=initialize(handles);
-end
+% ---
+function handles=query_hardware(handles)
 
 try
   % next two lines only needed for roian's rig
@@ -610,7 +600,24 @@ else
   set(handles.VideoOnOff,'enable','off');
 end
 
-set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
+
+% --- Executes just before av_take is made visible.
+function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to av_take (see VARARGIN)
+
+handles.rcfilename = 'most_recent_av_config.mat';
+if(exist(handles.rcfilename)==2)
+  handles=load_configuration_file(handles.rcfilename,handles);
+else
+  handles=initialize(handles);
+end
+
+handles=query_hardware(handles);
+
 %delete(timerfind);
 
 % javaaddpath('javasysmon-0.3.4.jar');
@@ -1053,7 +1060,6 @@ if(~handles.running)
   end
 
   handles.running=1;
-  set(handles.StartStop,'string','stop','backgroundColor',[1 0 0]);
   
   if(handles.analog.in.on)
     clear analog_in_callback
@@ -1197,7 +1203,6 @@ elseif(handles.running)
 %     delete(handles.timer.auto_turn_off);
 %   end
 
-  set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
   handles.running=0;
 end
 
@@ -1270,6 +1275,7 @@ function Reset_Callback(hObject, eventdata, handles)
 questdlg('Reset configuration to default?','','Yes','No','No');
 if(strcmp(ans,'No'))  return;  end
 handles=initialize(handles);
+handles=query_hardware(handles);
 update_figure(handles);
 guidata(hObject, handles);
 
