@@ -99,7 +99,6 @@ handles.video.formatlist={};
 handles.video.formatvalue=nan;
 handles.video.ROI=[];
 handles.video.FPS=nan;
-handles.video.trigger=[];
 handles.video.ncounters=0;
 handles.video.counter=1;
 handles.video.timestamps=1;
@@ -165,7 +164,6 @@ handles.video.formatlist=handles_saved.video.formatlist;
 handles.video.formatvalue=handles_saved.video.formatvalue;
 handles.video.ROI=handles_saved.video.ROI;
 handles.video.FPS=handles_saved.video.FPS;
-handles.video.trigger=handles_saved.video.trigger;
 handles.video.ncounters=handles_saved.video.ncounters;
 handles.video.counter=handles_saved.video.counter;
 handles.video.timestamps=handles_saved.video.timestamps;
@@ -491,9 +489,9 @@ while i<=length(handles.analog.session.Channels)
 end
 
 if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(handles.video.FPS))
-  handles.video.trigger=handles.analog.session.addCounterOutputChannel(...
+  h=handles.analog.session.addCounterOutputChannel(...
       handles.daqdevices.ID,handles.video.counter-2,'PulseGeneration');
-  set(handles.video.trigger,'Frequency',handles.video.FPS);
+  set(h,'Frequency',handles.video.FPS);
 end
  
 
@@ -668,6 +666,35 @@ end
 
 
 % ---
+function save_config_file(handles,filename)
+
+tmp=fieldnames(handles);
+for(i=1:length(tmp))
+  if(isnumeric(handles.(tmp{i})) && (numel(handles.(tmp{i}))==1)&& (handles.(tmp{i})>0) && ishandle(handles.(tmp{i})))
+    handles=rmfield(handles,tmp{i});
+  end
+end
+
+handles=rmfield(handles,'daqdevices');
+handles=rmfield(handles,'videoadaptors');
+handles.analog=rmfield(handles.analog,'session');
+handles.analog.out=rmfield(handles.analog.out,'ranges_available');
+handles.analog.in=rmfield(handles.analog.in,'ranges_available');
+handles.analog.in=rmfield(handles.analog.in,'terminal_configurations_available');
+% handles.video.input=[];
+if(isfield(handles,'listenerAnalogIn'))
+  handles=rmfield(handles,'listenerAnalogIn');
+end
+if(isfield(handles,'listenerAnalogOut'))
+  handles=rmfield(handles,'listenerAnalogOut');
+end
+if(isfield(handles,'timer'))
+  handles=rmfield(handles,'timer');
+end
+save(filename,'handles');
+
+
+% ---
 function figure_CloseRequestFcn(hObject, eventdata)
 
 handles=guidata(hObject);
@@ -681,14 +708,7 @@ if(isfield(handles,'daqdevices'))
     uiwait(errordlg('please stop the recording first'));
     return;
   end
-  delete(handles.analog.session);
-  handles.daqdevices=[];  handles.analog.session=[];
-  handles.analog.out.ranges_available=[];
-  handles.analog.in.ranges_available=[];
-  handles.analog.in.terminal_configuration_available=[];
-  handles.video.input=[];  handles.video.trigger=[];
-  handles.timer=[];
-  save(handles.rcfilename,'handles');
+  save_config_file(handles,handles.rcfilename);
 end
 delete(hObject);
 
@@ -924,9 +944,13 @@ for i=1:handles.video.n
   end
 
   if(handles.video.save(i))
+    filename=[handles.filename 'v'];
+    if(handles.video.n>1)
+      filename=[filename num2str(i)];
+    end
     invoke(handles.video.actx(i), 'Execute', ...
         ['vifile=VideoWriter(''' ...
-            fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i)]) ''',''' ...
+            fullfile(handles.video.directory{i}, filename) ''',''' ...
             handles.video.fileformats_available{handles.video.fileformat} ''');  '...
         'set(vifile,''FrameRate'',' num2str(handles.video.FPS) quality ');']);
     if handles.video.timestamps==1
@@ -936,7 +960,7 @@ for i=1:handles.video.n
     else
       invoke(handles.video.actx(i), 'Execute', ...
           ['fid=fopen(''' ...
-              fullfile(handles.video.directory{i}, [handles.filename '_' num2str(i) '.ts']) ''',''w'');  '...
+              fullfile(handles.video.directory{i}, [filename '.ts']) ''',''w'');  '...
           'set(vi,''FramesAcquiredFcnCount'',' num2str(handles.video.FPS) ','...
               '''FramesAcquiredFcn'',@(hObject,eventdata)av_video_callback(hObject,eventdata,vi,' ...
               num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
@@ -1107,6 +1131,8 @@ if(~handles.running)
         @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
   end
 
+  save_config_file(handles,fullfile(handles.analog.in.directory,[handles.filename 'c.mat']));
+  
   if handles.video.on 
     clear av_video_callback
     handles=video_thread(handles);
@@ -1114,7 +1140,7 @@ if(~handles.running)
     handles=video_setup_preview(handles);
     for i=1:handles.video.n
       invoke(handles.video.actx(i), 'Execute', ...
-         'flushdata(vi);  start(vi);');
+         'start(vi);');
     end
   end
 
@@ -1245,6 +1271,9 @@ function Load_Callback(hObject, eventdata, handles)
 [file,path]=uigetfile('*.mat','Select configuration file to open');
 if(isnumeric(file) && isnumeric(path) && (file==0) && (path==0))  return;  end
 handles=load_configuration_file(fullfile(path,file),handles);
+handles=configure_analog_output_channels(handles);
+handles=configure_analog_input_channels(handles);
+handles=configure_video_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
 
@@ -1257,13 +1286,7 @@ function Save_Callback(hObject, eventdata, handles)
 
 [file,path]=uiputfile('*.mat','Select file to save configuration to');
 if(isnumeric(file) && isnumeric(path) && (file==0) && (path==0))  return;  end
-tmp={'timer','daqdevices','videoadaptors'};
-idx=isfield(handles,tmp);
-handles=rmfield(handles,tmp(idx));
-if(isfield(handles.analog,'session'))
-  handles.analog=rmfield(handles.analog,'session');
-end
-save(fullfile(path,file),'handles');
+save_config_file(handles,fullfile(path,file));
 
 
 % --------------------------------------------------------------------
@@ -1278,16 +1301,6 @@ handles=initialize(handles);
 handles=query_hardware(handles);
 update_figure(handles);
 guidata(hObject, handles);
-
-
-% --- Executes when user attempts to close figure1.
-function figure1_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: delete(hObject) closes the figure
-delete(hObject);
 
 
 % --- Executes on button press in AnalogOutOnOff.
