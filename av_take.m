@@ -365,11 +365,13 @@ end
 set(handles.AnalogOutOnOff,'enable','off','value',handles.analog.out.on);
 set(handles.AnalogInOnOff,'enable','off','value',handles.analog.in.on);
 set(handles.VideoOnOff,'enable','off','value',handles.video.on);
+set(handles.TimeLimit,'enable','off','string',num2str(handles.timelimit));
 set(handles.VerboseLevel,'enable','off','value',handles.verbose+1);
 if(~handles.running)
   set(handles.AnalogInOnOff,'enable','on');
   set(handles.AnalogOutOnOff,'enable','on');
   set(handles.VideoOnOff,'enable','on');
+  set(handles.TimeLimit,'enable','on');
   set(handles.VerboseLevel,'enable','on');
 end
 
@@ -1033,7 +1035,7 @@ if handles.video.on && handles.video.save(handles.video.curr)
   end
 end
 
-drawnow('expose')
+drawnow('expose');
 
 if handles.verbose>1
   disp(['exiting  audio/video display_callback:    ' num2str(toc) 's']);
@@ -1046,7 +1048,10 @@ function StartStop_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(handles.StartStop,'enable','off');  drawnow('expose');
+if handles.verbose>1
+  disp('entering startstop_callback');
+  tic
+end
 
 if(~handles.running)
   if(sum(handles.analog.out.play)>0)
@@ -1060,7 +1065,6 @@ if(~handles.running)
     find([handles.analog.out.play],1,'first');
     if(handles.analog.out.fs(ans) ~= handles.analog.in.fs)
       uiwait(warndlg('analog input and output sampling rate must be equal'));
-      set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
     end
   end
@@ -1078,7 +1082,6 @@ if(~handles.running)
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     if(isnan(rate) || isempty(rate) || (rate<1))
       uiwait(errordlg('sampling rate must be a positive integer'));
-      set(handles.StartStop,'enable','on');  drawnow('expose');
       return;
     else
       handles.analog.session.Rate=rate;
@@ -1147,7 +1150,7 @@ if(~handles.running)
     end
   end
 
-  guidata(hObject, handles);  % necessary??
+%   guidata(hObject, handles);  % necessary??
 
   if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
     handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
@@ -1161,14 +1164,7 @@ if(~handles.running)
       'TimerFcn',@(hObject,eventdata)display_callback(hObject,eventdata,handles));
   start(handles.timer.update_display);
 
-  guidata(hObject, handles);  % necessary??
-
-%   tmp=handles.timelimit;
-%   if(tmp>0)
-%     handles.timer.auto_turn_off.=timer('Name','auto turn off','startDelay',60*tmp,'ExecutionMode','singleShot',...
-%         'TimerFcn',@OnOff_Callback);
-%     start(handles.timer.auto_turn_off);
-%   end
+%   guidata(hObject, handles);  % necessary??
 
 elseif(handles.running)
   if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
@@ -1185,6 +1181,11 @@ elseif(handles.running)
     if(handles.analog.in.record)
       fclose(handles.analog.in.fid);
     end
+  end
+
+  if(isvalid(handles.timer.update_display))
+    stop(handles.timer.update_display);
+    delete(handles.timer.update_display);
   end
 
   if handles.video.on 
@@ -1222,23 +1223,20 @@ elseif(handles.running)
     end
   end
 
-  if(isvalid(handles.timer.update_display))
-    stop(handles.timer.update_display);
-    delete(handles.timer.update_display);
-  end
-
-%   if(isvalid(handles.timer.auto_turn_off))
-%     stop(handles.timer.auto_turn_off);
-%     delete(handles.timer.auto_turn_off);
-%   end
-
   handles.running=0;
 end
 
 update_figure(handles);
 guidata(hObject, handles);
 
-set(handles.StartStop,'enable','on');  drawnow('expose');
+if handles.verbose>1
+  disp(['exiting  startstop_callback:    ' num2str(toc) 's']);
+end
+
+if((handles.timelimit>0) && handles.running)
+  pause(handles.timelimit);
+  StartStop_Callback(hObject, eventdata, handles);
+end
 
 
 function TimeLimit_Callback(hObject, eventdata, handles)
@@ -1250,6 +1248,8 @@ function TimeLimit_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of TimeLimit as a double
 
 handles.timelimit=str2num(get(handles.TimeLimit,'string'));
+update_figure(handles);
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
