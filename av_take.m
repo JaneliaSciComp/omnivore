@@ -97,7 +97,7 @@ handles.video.devicename={};
 handles.video.deviceid='';
 handles.video.formatlist={};
 handles.video.formatvalue=nan;
-handles.video.ROI=[];
+handles.video.ROI={};
 handles.video.FPS=nan;
 handles.video.ncounters=0;
 handles.video.counter=1;
@@ -322,7 +322,7 @@ set_videoquality_tooltip_str(handles);
 set(handles.VideoChannel,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
-  set(handles.VideoROI,'string',num2str(handles.video.ROI(handles.video.curr,:),'%d,%d,%d,%d'));
+  set(handles.VideoROI,'string',num2str(handles.video.ROI{handles.video.curr},'%d,%d,%d,%d'));
   set(handles.VideoNumChannels,'string',handles.video.n);
   set(handles.VideoChannel,'string',...
       cellfun(@(n,s) [num2str(n) ' ' s], num2cell(1:handles.video.n),...
@@ -460,11 +460,11 @@ guidata(obj, handles);
 
 
 % ---
-function handles=get_video_params(handles)
+function handles=get_video_params(handles,chan)
 
-invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+invoke(handles.video.actx(chan), 'Execute', ...
     'data=av_get_video_params(vi)');
-data = handles.video.actx(handles.video.curr).GetVariable('data','base');
+data = handles.video.actx(chan).GetVariable('data','base');
 
 % a hack to turn >1 numbers into string
 tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
@@ -474,7 +474,7 @@ for i=1:length(tmp)
 end
 
 set(handles.VideoParams,'data',data);
-handles.video.params{handles.video.curr}=data;
+handles.video.params{chan}=data;
 
 
 % ---
@@ -586,7 +586,7 @@ if(isfield(handles,'videoadaptors'))
     handles.video.curr=1;
     handles.video.save=zeros(1,maxn);
     handles.video.directory=cell(1,maxn);
-    handles.video.ROI=repmat([0 0 640 480],maxn,1);
+    handles.video.ROI=cell(1,maxn);
     handles.video.FPS=1;
     handles.video.params=cell(1,maxn);
   end
@@ -908,33 +908,33 @@ for i=1:handles.video.n
   invoke(handles.video.actx(i), 'Execute', ...
       ['cd(''' pwd ''');  '...
       'vi=videoinput(''' handles.video.adaptor{i} ''',' num2str(handles.video.deviceid(i)) ',''' ...
-          handles.video.formatlist{i}{handles.video.formatvalue(i)} ''');  '...
-      'set(vi,''FramesPerTrigger'',inf,''TriggerRepeat'',0);  '...
-      'triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
-  if(~isempty(handles.video.ROI))
-      invoke(handles.video.actx(i), 'Execute', ...
-          ['set(vi,''ROIPosition'',[' num2str(handles.video.ROI(i,:)) ']);']);
-  end
-%   invoke(handles.video.actx(i), 'Execute', ...
-%       ['set(vi,''FrameGrabInterval'',1);']);
+          handles.video.formatlist{i}{handles.video.formatvalue(i)} ''');']);
 
-%   if(handles.video.save(i))  % Pip's hack, seemingly not necessary
-%     invoke(handles.video.actx(i), 'Execute', ...
-%         ['vifile=VideoWriter(tempname,''' handles.video.fileformats_available{handles.video.fileformat} ''');  '...
-%         'set(vi,''LoggingMode'',''disk'',''DiskLogger'',vifile);  '...
-%         'start(vi);  pause(1);  stop(vi);  ']);
-%     invoke(handles.video.actx(i), 'Execute', ...
-%         ['tic;  while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired)) && (toc<10))  pause(0.1);  end;  '...
-%         'tmp=fullfile(vifile.Path,vifile.Filename);  close(vifile);  delete(tmp);  '...
-%         'set(vi,''LoggingMode'',''memory'',''DiskLogger'',[]);']);
-%   end
+  if(~isempty(handles.video.ROI{i}))
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['set(vi,''ROIPosition'',[' num2str(handles.video.ROI{i}) ']);']);
+  end
   
-  if(handles.video.counter>1)
+  if(handles.video.counter==0)
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['set(vi,''FramesPerTrigger'',inf,''TriggerRepeat'',0);  '...
+        'triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
+  else
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vi,''FramesPerTrigger'',1,''TriggerRepeat'',inf);  '...
         'triggerconfig(vi, ''hardware'', ''fallingEdge'', ''externalTriggerMode0-Source0'');']);
   end
   
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['roiPos = get(vi, ''ROIPosition'');  ' ...
+      'nBands = get(vi, ''NumberOfBands'');']);
+  roiPos = handles.video.actx(i).GetVariable('roiPos','base');
+  nBands = handles.video.actx(i).GetVariable('nBands','base');
+  invoke(handles.video.actx(i), 'Execute', ...
+      ['fig=figure(''units'',''pixels'',''position'',[' num2str(roiPos) '],''numbertitle'',''off'',''menubar'',''none'',''visible'',''off'');  '...
+      'ax=axes(''position'',[0 0 1 1],''parent'',fig);  '...
+      'im = image(zeros(' num2str(roiPos(4)) ',' num2str(roiPos(3)) ',' num2str(nBands) '),''parent'',ax);']);
+
   data=handles.video.params{i};
   if ~isempty(data)
     for j=1:size(data,1)
@@ -944,7 +944,7 @@ for i=1:handles.video.n
           ['set(vi.Source,''' data{j,1} ''',tmp)']);
     end
   else
-    handles=get_video_params(handles);
+    handles=get_video_params(handles,i);
   end
 
   if(handles.video.save(i))
@@ -1137,7 +1137,20 @@ if(~handles.running)
         @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
   end
 
-  save_config_file(handles,fullfile(handles.analog.in.directory,[handles.filename 'c.mat']));
+  tmp=[];
+  if(handles.analog.in.record)
+    tmp=handles.analog.in.directory;
+  else
+    for i=1:handles.video.n
+      if handles.video.save(i)
+        tmp=handles.video.directory{i};
+        break;
+      end
+    end
+  end
+  if(~isempty(tmp))
+    save_config_file(handles,fullfile(tmp,[handles.filename 'c.mat']));
+  end
   
   if handles.video.on 
     clear av_video_callback
@@ -1198,18 +1211,19 @@ elseif(handles.running)
       if handles.video.save(i)
         invoke(handles.video.actx(i), 'Execute', ...
             ['tic; '...
-            'while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired) || (vi.FramesAvailable>0)) && (toc<10)) '...
-              'pause(0.1); ' ...
+            'while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired) && (toc<10)) || (vi.FramesAvailable>0)) '...
               'if(vi.FramesAvailable>0) ' ...
                   'av_video_callback([],[],vi,' ...
                   num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
                   num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) '); ' ...
+              'else ' ...
+                'pause(0.1); ' ...
               'end; ' ...
             'end; ' ...
             'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;']);
         not_saved=handles.video.actx(i).GetVariable('not_saved','base');
         if(not_saved>0)
-          warning([num2str(not_saved) ' frames have not been saved']);
+          warndlg([num2str(not_saved) ' frames have not been saved for camera ' num2str(i)]);
         end
         invoke(handles.video.actx(i), 'Execute', ...
             'close(vifile);');
@@ -1234,7 +1248,7 @@ if handles.verbose>1
 end
 
 if((handles.timelimit>0) && handles.running)
-  pause(handles.timelimit);
+  pause(60*handles.timelimit);
   StartStop_Callback(hObject, eventdata, handles);
 end
 
@@ -2066,7 +2080,7 @@ function VideoROI_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of VideoROI as text
 %        str2double(get(hObject,'String')) returns contents of VideoROI as a double
 
-handles.video.ROI(handles.video.curr,:)=str2num(get(hObject,'String'));
+handles.video.ROI{handles.video.curr}=str2num(get(hObject,'String'));
 update_figure(handles);
 guidata(hObject, handles);
 
@@ -2148,24 +2162,16 @@ end
 function handles=video_setup_preview(handles)
 
 invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    ['roiPos = get(vi, ''ROIPosition'');  '...
-    'nBands = get(vi, ''NumberOfBands'');']);
-roiPos = handles.video.actx(handles.video.curr).GetVariable('roiPos','base');
-nBands = handles.video.actx(handles.video.curr).GetVariable('nBands','base');
-invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    ['fig=figure(''units'',''pixels'',''position'',[' num2str(roiPos) '],''numbertitle'',''off'',''menubar'',''none'');  '...
-    'ax=axes(''position'',[0 0 1 1],''parent'',fig);  '...
-    'im = image(zeros(' num2str(roiPos(4)) ',' num2str(roiPos(3)) ',' num2str(nBands) '),''parent'',ax);  '...
-    'preview(vi,im);']);
+    'set(fig,''visible'',''on'');  preview(vi,im);');
 
-    
+
 % ---
 function handles=video_takedown_preview(handles)
 
 invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'stoppreview(vi);  closepreview(vi);  delete(fig);');
-
+    'stoppreview(vi);  set(fig,''visible'',''off'');');
   
+
 % --- Executes on selection change in VideoChannel.
 function VideoChannel_Callback(hObject, eventdata, handles)
 % hObject    handle to VideoChannel (see GCBO)
