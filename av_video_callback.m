@@ -14,44 +14,35 @@ catch
   [data,time,~]=getdata(vi);
 end
 
-switch timestamps
-  case 2
-    ts=time;
-  case 3
-    nframes=size(data,4);
-    ts=nan(1,nframes);
-    %fn=nan(1,nframes);
-    for i=1:nframes
-      %f=rgb2gray(data(:,:,:,i));
+if timestamps == 3
+  nframes=size(data,4);
+  time=nan(1,nframes);
+  %fn=nan(1,nframes);
+  for i=1:nframes
+    %f=rgb2gray(data(:,:,:,i));
 
-      tmp=data(1,1:4,1,i);
-      second_count=uint16(bitand(tmp(1),254)/2);
-      cycle_count= uint16(bitand(tmp(1),1))*2^12 + ...
-                   uint16(bitand(tmp(2),255))*2^4 + ...
-                   uint16(bitand(tmp(3),128+64+32+16))/2^4;
-      cycle_offset=uint16(bitand(tmp(3),8+4+2+1)*2^8) + ...
-                   uint16(bitand(tmp(4),255));
-      ts(i)=double(second_count) + double(cycle_count)/8000 + 125e-6*double(cycle_offset)/3072;
-      
+    tmp=data(1,1:4,1,i);
+    second_count=uint16(bitand(tmp(1),254)/2);
+    cycle_count= uint16(bitand(tmp(1),1))*2^12 + ...
+                 uint16(bitand(tmp(2),255))*2^4 + ...
+                 uint16(bitand(tmp(3),128+64+32+16))/2^4;
+    cycle_offset=uint16(bitand(tmp(3),8+4+2+1)*2^8) + ...
+                 uint16(bitand(tmp(4),255));
+    time(i)=double(second_count) + double(cycle_count)/8000 + 125e-6*double(cycle_offset)/3072;
+
 %       tmp=data(1,5:8,1,i);
 %       fn(i)=uint32(tmp(1))*2^24 + uint32(tmp(2))*2^16 + uint32(tmp(3))*2^8 + uint32(tmp(4));
-    end
+  end
 end
 
-skip=round(diff(ts)*FPS);
-idx=find(skip>1);
-total=sum(skip(idx));
-% if(~isempty(idx))
-%   disp(['filling in ' num2str(total) ' skipped frames']);
-%   data(1,1,1,end+total)=1;
-%   for i=length(idx):-1:1
-%     data(:,:,:, (idx(i)+1+skip(idx(i))) : (nframes+skip(idx(i))) ) = data(:,:,:, (idx(i)+1):nframes);
-%     data(:,:,:, (idx(i)+1) : (idx(i)+skip(idx(i)))) = repmat(data(:,:,:,idx(i)),[1 1 1 skip(idx(i))]);
-%     nframes=nframes+skip(idx(i));
-%   end
-% end
-% writeVideo(vifile,data);
-fwrite(fid,ts,'double');
+if timestamps>0
+  fwrite(fid,time,'double');
+end
+
+% skip=round(diff(ts)*FPS);
+% idx=find(skip>1);
+% total=sum(skip(idx));
+skipped=round((time(end)-time(1))*FPS)+1-length(time);
 
 if current
   if(~isempty(time0))
@@ -61,7 +52,7 @@ if current
   %assignin('base','FPSProcessed',round(FPS/toc));
   assignin('base','FramesAvailable',get(vi,'FramesAcquired')-get(vi,'DiskLoggerFrameCount'));
   if(isempty(skipped0))  skipped0=0;  end
-  skipped0=skipped0+total;
+  skipped0=skipped0+skipped;
   assignin('base','FramesSkipped',skipped0);
 end
 
