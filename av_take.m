@@ -1285,9 +1285,12 @@ function Load_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[file,path]=uigetfile('*.mat','Select configuration file to open');
-if(isnumeric(file) && isnumeric(path) && (file==0) && (path==0))  return;  end
-handles=load_configuration_file(fullfile(path,file),handles);
+persistent directory
+if isempty(directory)  directory=pwd;  end
+
+[file,directory]=uigetfile(fullfile(directory,'*.mat'),'Select configuration file to open');
+if(isnumeric(file) && isnumeric(directory) && (file==0) && (directory==0))  return;  end
+handles=load_configuration_file(fullfile(directory,file),handles);
 handles=configure_analog_output_channels(handles);
 handles=configure_analog_input_channels(handles);
 handles=configure_video_channels(handles);
@@ -1301,9 +1304,12 @@ function Save_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[file,path]=uiputfile('*.mat','Select file to save configuration to');
-if(isnumeric(file) && isnumeric(path) && (file==0) && (path==0))  return;  end
-save_config_file(handles,fullfile(path,file));
+persistent directory
+if isempty(directory)  directory=pwd;  end
+
+[file,directory]=uiputfile(fullfile(directory,'*.mat'),'Select file to save configuration to');
+if(isnumeric(file) && isnumeric(directory) && (file==0) && (directory==0))  return;  end
+save_config_file(handles,fullfile(directory,file));
 
 
 % --------------------------------------------------------------------
