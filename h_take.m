@@ -1,5 +1,5 @@
-function varargout = av_take(varargin)
-% PREFERENCE_TAKE MATLAB code for av_take.fig
+function varargout = h_take(varargin)
+% PREFERENCE_TAKE MATLAB code for h_take.fig
 %      PREFERENCE_TAKE, by itself, creates a new PREFERENCE_TAKE or raises the existing
 %      singleton*.
 %
@@ -11,16 +11,16 @@ function varargout = av_take(varargin)
 %
 %      PREFERENCE_TAKE('Property','Value',...) creates a new PREFERENCE_TAKE or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before av_take_OpeningFcn gets called.  An
+%      applied to the GUI before h_take_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to av_take_OpeningFcn via varargin.
+%      stop.  All inputs are passed to h_take_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help av_take
+% Edit the above text to modify the response to help h_take
 
 % Last Modified by GUIDE v2.5 19-Apr-2013 14:49:37
 
@@ -28,8 +28,8 @@ function varargout = av_take(varargin)
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @av_take_OpeningFcn, ...
-                   'gui_OutputFcn',  @av_take_OutputFcn, ...
+                   'gui_OpeningFcn', @h_take_OpeningFcn, ...
+                   'gui_OutputFcn',  @h_take_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -109,13 +109,13 @@ handles.hygrometer.object=hygrometer(handles.daqdevices, handles.portout, handle
 set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
 
   
-% --- Executes just before av_take is made visible.
-function av_take_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before h_take is made visible.
+function h_take_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to av_take (see VARARGIN)
+% varargin   command line arguments to h_take (see VARARGIN)
 
 % TODO
 %   test with flycap2, crashed once after 10 min
@@ -161,7 +161,7 @@ set(handles.StartStop,'string','start','backgroundColor',[0 1 0]);
 % warning('off','MATLAB:Java:ConvertFromOpaque');
 % start(handles.system_monitor.timer);
 
-% Choose default command line output for av_take
+% Choose default command line output for h_take
 handles.output = hObject;
 
 set(hObject,'CloseRequestFcn',@figure_CloseRequestFcn);
@@ -171,7 +171,7 @@ update_figure(handles);
 % Update handles structure
 guidata(hObject, handles);
 
-% UIWAIT makes av_take wait for user response (see UIRESUME)
+% UIWAIT makes h_take wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
 
@@ -227,7 +227,7 @@ delete(hObject);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = av_take_OutputFcn(hObject, eventdata, handles) 
+function varargout = h_take_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -256,10 +256,8 @@ drawnow;
 set(handles.HygrometerData,'string',[num2str(T,'%2.1f') 'C,' num2str(RH,2) '%']);
 
 if(handles.hygrometer.save)
-  fprintf(handles.hygrometer.fid,'%f ',etime(clock,datevec(timeT)));
-  fprintf(handles.hygrometer.fid,'%f ',T);
-  fprintf(handles.hygrometer.fid,'%f ',RH);
-  fprintf(handles.hygrometer.fid,'\n');
+  fprintf(handles.hygrometer.fid,'%s %f deg C\n',datestr(timeT,0),T);
+  fprintf(handles.hygrometer.fid,'%s %f %%RH\n',datestr(timeRH,0),RH);
 end
 
 set(handles.HygrometerData,'foregroundcolor',fc);
