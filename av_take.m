@@ -915,7 +915,7 @@ for i=1:handles.video.n
         ['set(vi,''ROIPosition'',[' num2str(handles.video.ROI{i}) ']);']);
   end
   
-  if(handles.video.counter==0)
+  if(handles.video.counter==1)
     invoke(handles.video.actx(i), 'Execute', ...
         ['set(vi,''FramesPerTrigger'',inf,''TriggerRepeat'',0);  '...
         'triggerconfig(vi, ''immediate'', ''none'', ''none'');']);
