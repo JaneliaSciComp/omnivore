@@ -350,7 +350,9 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoSave,'enable','on');
     set(handles.VideoFormat,'enable','on');
     set(handles.VideoTimeStamps,'enable','on');
-    set(handles.VideoFPS,'enable','on');
+    if handles.video.counter>1
+      set(handles.VideoFPS,'enable','on');
+    end
     set(handles.VideoROI,'enable','on');
     set(handles.VideoNumChannels,'enable','on');
     set(handles.VideoTrigger,'enable','on');
@@ -439,9 +441,10 @@ function set_video_param(obj,event,handles)
 
 data=get(handles.VideoParams,'data');
 handles.video.params{handles.video.curr}=data;
+
 row=event.Indices(1);
 
-if strcmp(data{row,4},'always')  return;  end
+if ~handles.running || strcmp(data{row,4},'always')  return;  end
 
 if strcmp(data{row,4},'whileRunning')
   invoke(handles.video.actx(handles.video.curr), 'Execute', ...
@@ -1027,8 +1030,10 @@ if handles.video.on && handles.video.save(handles.video.curr)
         num2str(handles.video.actx(handles.video.curr).GetVariable('FPSAchieved','base')));
     set(handles.VideoFramesAvailable,'string',...
         num2str(handles.video.actx(handles.video.curr).GetVariable('FramesAvailable','base')));
-    set(handles.VideoFramesSkipped,'string',...
-        num2str(handles.video.actx(handles.video.curr).GetVariable('FramesSkipped','base')));
+    if handles.video.counter>1
+      set(handles.VideoFramesSkipped,'string',...
+          num2str(handles.video.actx(handles.video.curr).GetVariable('FramesSkipped','base')));
+    end
 %     end
   catch
   end
