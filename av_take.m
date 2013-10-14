@@ -314,11 +314,10 @@ set(handles.VideoFPS,'enable','off');
 set(handles.VideoNumChannels,'enable','off');
 set(handles.VideoTrigger,'enable','off');
 set(handles.VideoFileFormat,'enable','off');
-set(handles.VideoFileQuality,'enable','off');
+set(handles.VideoFileQuality,'enable','off','tooltipstring','');
 set(handles.VideoParams,'enable','on');
 set(handles.VideoHistogram,'enable','off');
 set(handles.VerboseLevel,'enable','off');
-set_videoquality_tooltip_str(handles);
 set(handles.VideoChannel,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFPS,'string',handles.video.FPS);
@@ -357,7 +356,12 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoNumChannels,'enable','on');
     set(handles.VideoTrigger,'enable','on');
     set(handles.VideoFileFormat,'enable','on');
-    set(handles.VideoFileQuality,'enable','on');
+    switch(handles.video.fileformats_available{handles.video.fileformat})
+      case {'Motion JPEG AVI','MPEG-4'}
+        set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
+      case 'Motion JPEG 2000'
+        set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+    end
   else
     set(handles.VideoHistogram,'enable','on');
   end
@@ -901,6 +905,7 @@ switch(handles.video.fileformats_available{handles.video.fileformat})
     quality=[',''compressionratio'',' num2str(handles.video.filequality)];
 %    handles.video.extension='.jp2';
   otherwise
+    
     quality='';
 end
 
@@ -2297,20 +2302,8 @@ function VideoFileFormat_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of VideoTrigger
 
 handles.video.fileformat=get(handles.VideoFileFormat,'value');
-set_videoquality_tooltip_str(handles);
+update_figure(handles);
 guidata(hObject, handles);
-
-
-function set_videoquality_tooltip_str(handles)
-
-switch(handles.video.fileformats_available{handles.video.fileformat})
-  case {'Motion JPEG AVI','MPEG-4'}
-    set(handles.VideoFileQuality,'tooltipstring','quality (1-100)');
-  case 'Motion JPEG 2000'
-    set(handles.VideoFileQuality,'tooltipstring','compression ratio (>1)');
-  otherwise
-    set(handles.VideoFileQuality,'enable','off');
-end
 
 
 function VideoFileQuality_Callback(hObject, eventdata, handles)
