@@ -895,8 +895,6 @@ end
 % ---
 function handles=video_thread(handles)
 
-imaqmem(1e10);
-
 switch(handles.video.fileformats_available{handles.video.fileformat})
   case {'Motion JPEG AVI','MPEG-4'}
     quality=[',''quality'',' num2str(handles.video.filequality)];
@@ -915,6 +913,7 @@ for i=1:handles.video.n
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
       ['cd(''' pwd ''');  '...
+      'imaqmem(1e9);  '...
       'vi=videoinput(''' handles.video.adaptor{i} ''',' num2str(handles.video.deviceid(i)) ',''' ...
           handles.video.formatlist{i}{handles.video.formatvalue(i)} ''');']);
 
