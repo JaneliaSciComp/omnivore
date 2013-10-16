@@ -582,7 +582,7 @@ if(isfield(handles,'videoadaptors'))
   end
   if((handles.video.maxn~=maxn) || ~isequal(handles.video.adaptor,adaptor) || ...
         ~isequal(handles.video.deviceid,deviceid) || ~isequal(handles.video.devicename,devicename) || ...
-        ~isequal(handles.video.formatlist,formatlist))
+        ~all(cellfun(@(x,y) isequal(x,y), handles.video.formatlist, formatlist)))
     handles.video.maxn=maxn;
     handles.video.n=maxn;
     handles.video.adaptor=adaptor;
