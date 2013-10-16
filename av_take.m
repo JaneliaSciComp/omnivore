@@ -445,6 +445,7 @@ function set_video_param(obj,event,handles)
 
 data=get(handles.VideoParams,'data');
 handles.video.params{handles.video.curr}=data;
+guidata(obj, handles);
 
 row=event.Indices(1);
 
@@ -463,7 +464,6 @@ if strcmp(data{row,4},'whileRunning')
   invoke(handles.video.actx(handles.video.curr), 'Execute', ...
       'start(vi);');
 end
-guidata(obj, handles);
 
 
 % ---
