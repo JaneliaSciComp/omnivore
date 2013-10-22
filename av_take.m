@@ -374,9 +374,15 @@ set(handles.VideoOnOff,'enable','off','value',handles.video.on);
 set(handles.TimeLimit,'enable','off','string',num2str(handles.timelimit));
 set(handles.VerboseLevel,'enable','off','value',handles.verbose+1);
 if(~handles.running)
-  set(handles.AnalogInOnOff,'enable','on');
-  set(handles.AnalogOutOnOff,'enable','on');
-  set(handles.VideoOnOff,'enable','on');
+  if(handles.analog.in.maxn>0)
+    set(handles.AnalogInOnOff,'enable','on');
+  end
+  if(handles.analog.out.maxn>0)
+    set(handles.AnalogOutOnOff,'enable','on');
+  end
+  if(handles.video.maxn>0)
+    set(handles.VideoOnOff,'enable','on');
+  end
   set(handles.TimeLimit,'enable','on');
   set(handles.VerboseLevel,'enable','on');
 end
