@@ -15,7 +15,7 @@ data acquisition boards.
 
 A Microsoft Windows computer.
 
-Matlab 2013a or newer.  Alternatively, binary executables are availabe
+Matlab 2013a or newer.  Alternatively, binary executables are available
 upon request.
 
 

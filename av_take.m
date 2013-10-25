@@ -690,24 +690,22 @@ for(i=1:length(tmp))
   end
 end
 
-handles=rmfield(handles,'daqdevices');
-handles=rmfield(handles,'videoadaptors');
-handles.analog=rmfield(handles.analog,'session');
-handles.analog.out=rmfield(handles.analog.out,'ranges_available');
-handles.analog.in=rmfield(handles.analog.in,'ranges_available');
-handles.analog.in=rmfield(handles.analog.in,'terminal_configurations_available');
-if isfield(handles.video,'actx')
-  handles.video=rmfield(handles.video,'actx');
-end
-% handles.video.input=[];
-if(isfield(handles,'listenerAnalogIn'))
-  handles=rmfield(handles,'listenerAnalogIn');
-end
-if(isfield(handles,'listenerAnalogOut'))
-  handles=rmfield(handles,'listenerAnalogOut');
-end
-if(isfield(handles,'timer'))
-  handles=rmfield(handles,'timer');
+fields_to_remove={...
+    {handles,'daqdevices'},...
+    {handles,'videoadaptors'},...
+    {handles,'session'},...
+    {handles,'listenerAnalogIn'},...
+    {handles,'listenerAnalogOut'},...
+    {handles.analog.out,'ranges_available'},...
+    {handles.analog.in,'ranges_available'},...
+    {handles.analog.in,'terminal_configurations_available'},...
+    {handles.video,'actx'},...
+    {handles,'timer'}};
+for field = fields_to_remove
+    field = field{1}
+    if isfield(field{1},field{2})
+        rmfield(field{1},field{2})
+    end
 end
 save(filename,'handles');
 
