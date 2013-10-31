@@ -35,7 +35,7 @@ if timestamps == 3
   end
 end
 
-if timestamps>0
+if timestamps>1
   fwrite(fid,time,'double');
 end
 
