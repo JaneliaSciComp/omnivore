@@ -473,24 +473,6 @@ end
 
 
 % ---
-function handles=get_video_params(handles,chan)
-
-invoke(handles.video.actx(chan), 'Execute', ...
-    'data=av_get_video_params(vi)');
-data = handles.video.actx(chan).GetVariable('data','base');
-
-% a hack to turn >1 numbers into string
-tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
-for i=1:length(tmp)
-  foo=data(tmp);
-  data{tmp}=num2str([foo{1}]);
-end
-
-set(handles.VideoParams,'data',data);
-handles.video.params{chan}=data;
-
-
-% ---
 function handles=configure_video_channels(handles)
 
 i=1;
@@ -575,15 +557,66 @@ if(isfield(handles,'videoadaptors'))
 
   %tmp=[];
   maxn=0;  adaptor={};  deviceid=[];  devicename={};  formatlist={};
-  for i=handles.videoadaptors.InstalledAdaptors
-    info=imaqhwinfo(char(i));
+  for currAdaptor=handles.videoadaptors.InstalledAdaptors
+    if strcmp(char(currAdaptor),'winvideo')  continue;  end  
+    info=imaqhwinfo(char(currAdaptor));
     if(~isempty(info.DeviceIDs))
       tmp=length(info.DeviceIDs);
       maxn=maxn+tmp;
-      adaptor=[adaptor repmat(i,1,tmp)];
+      adaptor=[adaptor repmat(currAdaptor,1,tmp)];
       deviceid=[deviceid info.DeviceIDs{:}];
       devicename=[devicename {info.DeviceInfo.DeviceName}];
       formatlist={formatlist{:} info.DeviceInfo.SupportedFormats};
+      for currDevice=1:tmp
+        vi=videoinput(char(currAdaptor),num2str(info.DeviceIDs{currDevice}));
+        
+        ss = getselectedsource(vi);
+        a = get(ss);
+        c = fieldnames(a);
+
+        data={}; j = 1;
+        %ignore properties: parent, selected, tag, type, frameTimeout,
+        for i = 1:length(c)
+            if strcmpi(c{i},'parent')|strcmpi(c{i},'selected')|strcmpi(c{i},'tag')|...
+               strcmpi(c{i},'type')|strcmpi(c{i},'NormalizedBytesPerPacket')|...
+               strcmpi(c{i},'FrameTimeout')
+                continue
+            end
+            data{j,1} = c{i}; data{j,2} = eval(['a.',c{i}]); 
+
+            pinfo=propinfo(ss,c{i});
+
+            switch pinfo.Constraint
+                case 'none'
+                    data{j,3} = pinfo.ConstraintValue;
+                case 'bounded'
+                    tmp =  pinfo.ConstraintValue;
+                    data{j,3} = ['  [',num2str(tmp(1)),' ',num2str(tmp(2)),']'];
+                case 'enum'
+                    str = '';
+                    for i = 1:length(pinfo.ConstraintValue)
+                        str = [str,', ',pinfo.ConstraintValue{i}];
+                    end
+                    str(1:2) = ' ';
+                    data{j,3} = str;
+            end
+
+            data{j,4}=pinfo.ReadOnly;
+
+            j = j+1;
+        end
+
+        % a hack to turn >1 numbers into string
+        tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
+        for i=1:length(tmp)
+          foo=data(tmp);
+          data{tmp}=num2str([foo{1}]);
+        end
+
+        params{currDevice}=data;
+
+        delete(vi);
+      end
     end
   end
   if((handles.video.maxn~=maxn) || ~isequal(handles.video.adaptor,adaptor) || ...
@@ -601,13 +634,8 @@ if(isfield(handles,'videoadaptors'))
     handles.video.directory=cell(1,maxn);
     handles.video.ROI=cell(1,maxn);
     handles.video.FPS=1;
-    handles.video.params=cell(1,maxn);
+    handles.video.params=params;
   end
-%   handles.video.pool=10;
-%   if(exist('matlabpool')==2)
-%     c=parcluster;
-%     handles.video.pool=10*c.NumWorkers;
-%   end
   handles=configure_video_channels(handles);
 else
   set(handles.VideoOnOff,'enable','off');
@@ -959,16 +987,21 @@ for i=1:handles.video.n
       'im = image(zeros(' num2str(roiPos(4)) ',' num2str(roiPos(3)) ',' num2str(nBands) '),''parent'',ax);']);
 
   data=handles.video.params{i};
-  if ~isempty(data)
+%   if ~isempty(data)
     for j=1:size(data,1)
       if strcmp(data{j,4},'always')  continue;  end
       handles.video.actx(i).PutWorkspaceData('tmp','base',data{j,2});
       invoke(handles.video.actx(i), 'Execute', ...
           ['set(vi.Source,''' data{j,1} ''',tmp)']);
     end
-  else
-    handles=get_video_params(handles,i);
-  end
+%   else
+%     invoke(handles.video.actx(i), 'Execute', ...
+%         'data=av_get_video_params(vi)');
+%     data = handles.video.actx(i).GetVariable('data','base');
+% 
+% %     set(handles.VideoParams,'data',data);
+%     handles.video.params{i}=data;
+%   end
 
   if(handles.video.save(i))
     filename=[handles.filename 'v'];
@@ -1227,8 +1260,12 @@ elseif(handles.running)
 
   if handles.video.on 
     for i=1:handles.video.n
+      try
       invoke(handles.video.actx(i), 'Execute', ...
           'stop(vi);');
+      catch
+        warning(['trouble closing channel' num2str(i)]);
+      end
     end
     handles=video_takedown_preview(handles);
     for i=1:handles.video.n
@@ -1257,6 +1294,8 @@ elseif(handles.running)
               'fclose(fid);');
         end
       end
+      invoke(handles.video.actx(i), 'Execute', ...
+          'delete(vi);');      
       handles.video.actx(i).Quit;
     end
   end
@@ -2083,7 +2122,7 @@ function VideoFormat_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoFormat
 
 handles.video.formatvalue(handles.video.curr)=get(handles.VideoFormat,'value');
-handles.video.params{handles.video.curr}=[];
+%handles.video.params{handles.video.curr}=[];
 update_figure(handles);
 guidata(hObject,handles);
 
