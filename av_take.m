@@ -307,6 +307,7 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
 end
 
 set(handles.VideoSave,'enable','off');
+set(handles.VideoDirectoryCopy,'enable','off');
 set(handles.VideoFormat,'enable','off');
 set(handles.VideoTimeStamps,'enable','off');
 set(handles.VideoROI,'enable','off');
@@ -347,6 +348,9 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoParams,'enable','on');
   if(~handles.running)
     set(handles.VideoSave,'enable','on');
+    if handles.video.n>1
+      set(handles.VideoDirectoryCopy,'enable','on');
+    end
     set(handles.VideoFormat,'enable','on');
     set(handles.VideoTimeStamps,'enable','on');
     if handles.video.counter>1
@@ -2065,6 +2069,21 @@ function VideoOnOff_Callback(hObject, eventdata, handles)
 handles.video.on=~handles.video.on;
 handles=configure_video_channels(handles);
 update_figure(handles);
+guidata(hObject,handles);
+
+
+% --- Executes on button press in VideoSave.
+function VideoDirectoryCopy_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoSave (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of VideoSave
+
+questdlg('Copy directory to all other channels?','','Yes','No','No');
+if(strcmp(ans,'No'))  return;  end
+handles.video.save=repmat(handles.video.save(handles.video.curr), 1, handles.video.n);
+handles.video.directory=repmat(handles.video.directory(handles.video.curr), 1, handles.video.n);
 guidata(hObject,handles);
 
 
