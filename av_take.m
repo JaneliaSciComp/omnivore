@@ -1973,11 +1973,12 @@ if(isempty(directory))  directory=pwd;  end
 handles=guidata(hObject);
 
 if(get(handles.AnalogInRecord,'value'))
-  directory=uigetdir(directory,'Select analog input directory');
-  if(directory~=0)
+  tmp=uigetdir(directory,'Select analog input directory');
+  if(tmp~=0)
     handles.analog.in.record=1;
-    handles.analog.in.directory=directory;
+    handles.analog.in.directory=tmp;
     set(handles.AnalogInDirectory,'string',handles.analog.in.directory,'enable','on');
+    directory=tmp;
   else
     set(handles.AnalogInRecord,'value',0);
   end
@@ -2100,12 +2101,13 @@ if(isempty(directory2))  directory2=pwd;  end
 
 handles=guidata(hObject);
 if(get(handles.VideoSave,'value'))
-  directory2=uigetdir(directory2,'Select video directory');
-  if(directory2~=0)
+  tmp=uigetdir(directory2,'Select video directory');
+  if(tmp~=0)
     handles.video.save(handles.video.curr)=1;
-    handles.video.directory{handles.video.curr}=directory2;
+    handles.video.directory{handles.video.curr}=tmp;
     set(handles.VideoDirectory,'string',handles.video.directory{handles.video.curr});
     set(handles.VideoDirectory,'enable','on');
+    directory2=tmp;
   else
     set(handles.VideoSave,'value',0);
   end
