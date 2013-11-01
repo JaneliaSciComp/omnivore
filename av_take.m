@@ -991,21 +991,12 @@ for i=1:handles.video.n
       'im = image(zeros(' num2str(roiPos(4)) ',' num2str(roiPos(3)) ',' num2str(nBands) '),''parent'',ax);']);
 
   data=handles.video.params{i};
-%   if ~isempty(data)
-    for j=1:size(data,1)
-      if strcmp(data{j,4},'always')  continue;  end
-      handles.video.actx(i).PutWorkspaceData('tmp','base',data{j,2});
-      invoke(handles.video.actx(i), 'Execute', ...
-          ['set(vi.Source,''' data{j,1} ''',tmp)']);
-    end
-%   else
-%     invoke(handles.video.actx(i), 'Execute', ...
-%         'data=av_get_video_params(vi)');
-%     data = handles.video.actx(i).GetVariable('data','base');
-% 
-% %     set(handles.VideoParams,'data',data);
-%     handles.video.params{i}=data;
-%   end
+  for j=1:size(data,1)
+    if strcmp(data{j,4},'always')  continue;  end
+    handles.video.actx(i).PutWorkspaceData('tmp','base',data{j,2});
+    invoke(handles.video.actx(i), 'Execute', ...
+        ['set(vi.Source,''' data{j,1} ''',tmp)']);
+  end
 
   if(handles.video.save(i))
     filename=[handles.filename 'v'];
@@ -1070,19 +1061,6 @@ end
 
 if handles.video.on && handles.video.save(handles.video.curr)
   try
-%     if handles.video.timestamps==1
-%       invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-%           ['InitialTriggerTime = vi.InitialTriggerTime;  '...
-%           'DiskLoggerFrameCount = vi.DiskLoggerFrameCount;  '...
-%           'FramesAcquired = vi.FramesAcquired;']);
-%       triggertime=handles.video.actx(handles.video.curr).GetVariable('InitialTriggerTime','base');
-%       logged=handles.video.actx(handles.video.curr).GetVariable('DiskLoggerFrameCount','base');
-%       acquired=handles.video.actx(handles.video.curr).GetVariable('FramesAcquired','base');
-%       set(handles.VideoFPSAchieved,'string',...
-%           num2str(round(acquired/((now-datenum(triggertime))*24*60*60))));
-%       set(handles.VideoFramesAvailable,'string',...
-%           num2str(round(acquired-logged)));
-%     else
     set(handles.VideoFPSAchieved,'string',...
         num2str(handles.video.actx(handles.video.curr).GetVariable('FPSAchieved','base')));
     set(handles.VideoFramesAvailable,'string',...
@@ -1091,7 +1069,6 @@ if handles.video.on && handles.video.save(handles.video.curr)
       set(handles.VideoFramesSkipped,'string',...
           num2str(handles.video.actx(handles.video.curr).GetVariable('FramesSkipped','base')));
     end
-%     end
   catch
   end
 end

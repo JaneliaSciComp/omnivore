@@ -39,23 +39,20 @@ if timestamps>1
   fwrite(fid,time,'double');
 end
 
-% skip=round(diff(ts)*FPS);
-% idx=find(skip>1);
-% total=sum(skip(idx));
 skipped=round((time(end)-time(1))*FPS)+1-length(time);
+if(isempty(skipped0))  skipped0=0;  end
+skipped0=skipped0+skipped;
 
 if current
   if(~isempty(time0))
     assignin('base','FPSAchieved',round(length(time)/(time(end)-time0)));
   end
-  time0=time(end);
-  %assignin('base','FPSProcessed',round(FPS/toc));
   assignin('base','FramesAvailable',get(vi,'FramesAcquired')-get(vi,'DiskLoggerFrameCount'));
-  if(isempty(skipped0))  skipped0=0;  end
-  skipped0=skipped0+skipped;
   assignin('base','FramesSkipped',skipped0);
 end
 
+time0=time(end);
+  
 if verbose>0
   disp(['exiting  video_callback:  ' ...
         num2str(toc/(size(data,4)/FPS),3) 'x real time is ' ...
