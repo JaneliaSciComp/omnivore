@@ -87,6 +87,8 @@ handles.video.n=nan;
 handles.video.curr=nan;
 handles.video.save=0;
 handles.video.directory={};
+handles.video.samedirectory=0;
+handles.video.sameroi=0;
 handles.video.preview=0;
 %handles.video.adaptor='winvideo';
 %handles.video.format='Mono8_1280x960';  % flea3
@@ -156,6 +158,8 @@ handles.video.n=handles_saved.video.n;
 handles.video.curr=handles_saved.video.curr;
 handles.video.save=handles_saved.video.save;
 handles.video.directory=handles_saved.video.directory;
+handles.video.samedirectory=handles_saved.video.samedirectory;
+handles.video.sameroi=handles_saved.video.sameroi;
 handles.video.preview=handles_saved.video.preview;
 handles.video.adaptor=handles_saved.video.adaptor;
 handles.video.devicename=handles_saved.video.devicename;
@@ -307,7 +311,8 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
 end
 
 set(handles.VideoSave,'enable','off');
-set(handles.VideoDirectoryCopy,'enable','off');
+set(handles.VideoSameDirectory,'enable','off');
+set(handles.VideoSameROI,'enable','off');
 set(handles.VideoFormat,'enable','off');
 set(handles.VideoTimeStamps,'enable','off');
 set(handles.VideoROI,'enable','off');
@@ -349,7 +354,8 @@ if(handles.video.on && (handles.video.maxn>0))
   if(~handles.running)
     set(handles.VideoSave,'enable','on');
     if handles.video.n>1
-      set(handles.VideoDirectoryCopy,'enable','on');
+      set(handles.VideoSameDirectory,'enable','on');
+      set(handles.VideoSameROI,'enable','on');
     end
     set(handles.VideoFormat,'enable','on');
     set(handles.VideoTimeStamps,'enable','on');
@@ -2053,17 +2059,28 @@ guidata(hObject,handles);
 
 
 % --- Executes on button press in VideoSave.
-function VideoDirectoryCopy_Callback(hObject, eventdata, handles)
+function VideoSameDirectory_Callback(hObject, eventdata, handles)
 % hObject    handle to VideoSave (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of VideoSave
 
-questdlg('Copy directory to all other channels?','','Yes','No','No');
-if(strcmp(ans,'No'))  return;  end
-handles.video.save=repmat(handles.video.save(handles.video.curr), 1, handles.video.n);
-handles.video.directory=repmat(handles.video.directory(handles.video.curr), 1, handles.video.n);
+handles=guidata(hObject);
+if get(handles.VideoSameDirectory,'Value')
+  questdlg('Copy directory to all other channels?','','Yes','No','No');
+  if(strcmp(ans,'No'))
+    handles.video.samedirectory=0;
+    set(hObject,'Value',0);
+    return;
+  end
+  handles.video.samedirectory=1;
+  handles.video.save=repmat(handles.video.save(handles.video.curr), 1, handles.video.n);
+  handles.video.directory=repmat(handles.video.directory(handles.video.curr), 1, handles.video.n);
+  guidata(hObject,handles);
+else
+  handles.video.samedirectory=0;
+end
 guidata(hObject,handles);
 
 
@@ -2084,6 +2101,10 @@ if(get(handles.VideoSave,'value'))
   if(tmp~=0)
     handles.video.save(handles.video.curr)=1;
     handles.video.directory{handles.video.curr}=tmp;
+    if handles.video.samedirectory==1
+      handles.video.save=repmat(handles.video.save(handles.video.curr), 1, handles.video.n);
+      handles.video.directory=repmat(handles.video.directory(handles.video.curr), 1, handles.video.n);
+    end
     set(handles.VideoDirectory,'string',handles.video.directory{handles.video.curr});
     set(handles.VideoDirectory,'enable','on');
     directory2=tmp;
@@ -2141,6 +2162,31 @@ end
 
 
 
+% --- Executes on button press in VideoSave.
+function VideoSameROI_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoSave (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of VideoSave
+
+handles=guidata(hObject);
+if get(handles.VideoSameROI,'Value')
+  questdlg('Copy ROI to all other channels?','','Yes','No','No');
+  if(strcmp(ans,'No'))
+    handles.video.sameroi=0;
+    set(hObject,'Value',0);
+    return;
+  end
+  handles.video.sameroi=1;
+  handles.video.ROI=repmat(handles.video.ROI(handles.video.curr), 1, handles.video.n);
+  guidata(hObject,handles);
+else
+  handles.video.sameroi=0;
+end
+guidata(hObject,handles);
+
+
 function VideoROI_Callback(hObject, eventdata, handles)
 % hObject    handle to VideoROI (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2150,6 +2196,9 @@ function VideoROI_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of VideoROI as a double
 
 handles.video.ROI{handles.video.curr}=str2num(get(hObject,'String'));
+if handles.video.sameroi==1
+  handles.video.ROI=repmat(handles.video.ROI(handles.video.curr), 1, handles.video.n);
+end
 update_figure(handles);
 guidata(hObject, handles);
 
