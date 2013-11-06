@@ -82,6 +82,7 @@ handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
 handles.analog.in.fileformat=1;
 handles.video.on=0;
+handles.video.syncpulseonly=0;
 handles.video.maxn=nan;
 handles.video.n=nan;
 handles.video.curr=nan;
@@ -153,6 +154,7 @@ handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
 handles.analog.in.fileformat=handles_saved.analog.in.fileformat;
 handles.video.on=handles_saved.video.on;
+handles.video.syncpulseonly=handles_saved.video.syncpulseonly;
 handles.video.maxn=handles_saved.video.maxn;
 handles.video.n=handles_saved.video.n;
 handles.video.curr=handles_saved.video.curr;
@@ -311,6 +313,7 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
 end
 
 set(handles.VideoSave,'enable','off');
+set(handles.VideoSyncPulseOnly,'enable','off');
 set(handles.VideoSameDirectory,'enable','off');
 set(handles.VideoSameROI,'enable','off');
 set(handles.VideoFormat,'enable','off');
@@ -325,7 +328,9 @@ set(handles.VideoParams,'enable','on');
 set(handles.VideoHistogram,'enable','off');
 set(handles.VerboseLevel,'enable','off');
 set(handles.VideoChannel,'enable','off');
+set(handles.VideoParams,'enable','off');
 if(handles.video.on && (handles.video.maxn>0))
+  set(handles.VideoSyncPulseOnly,'value',handles.video.syncpulseonly);
   set(handles.VideoFPS,'string',handles.video.FPS);
   set(handles.VideoROI,'string',num2str(handles.video.ROI{handles.video.curr},'%d,%d,%d,%d'));
   set(handles.VideoNumChannels,'string',handles.video.n);
@@ -350,32 +355,39 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoFileFormat,'value',handles.video.fileformat);
   set(handles.VideoFileQuality,'string',handles.video.filequality);
   set(handles.VideoParams,'data',handles.video.params{handles.video.curr});
-  set(handles.VideoParams,'enable','on');
-  if(~handles.running)
-    set(handles.VideoSave,'enable','on');
-    if handles.video.n>1
-      set(handles.VideoSameDirectory,'enable','on');
-      set(handles.VideoSameROI,'enable','on');
+  if ~handles.running
+    if handles.video.ncounters>1
+      set(handles.VideoSyncPulseOnly,'enable','on');
+      set(handles.VideoTrigger,'enable','on');
     end
-    set(handles.VideoFormat,'enable','on');
-    set(handles.VideoTimeStamps,'enable','on');
     if handles.video.counter>1
       set(handles.VideoFPS,'enable','on');
     end
-    set(handles.VideoROI,'enable','on');
-    set(handles.VideoNumChannels,'enable','on');
-    set(handles.VideoTrigger,'enable','on');
-    set(handles.VideoFileFormat,'enable','on');
-    switch(handles.video.fileformats_available{handles.video.fileformat})
-      case {'Motion JPEG AVI','MPEG-4'}
-        set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
-      case 'Motion JPEG 2000'
-        set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
-    end
-  else
-    set(handles.VideoHistogram,'enable','on');
   end
-  set(handles.VideoChannel,'enable','on');
+  if ~handles.video.syncpulseonly
+    set(handles.VideoParams,'enable','on');
+    set(handles.VideoChannel,'enable','on');
+    if ~handles.running
+      set(handles.VideoSave,'enable','on');
+      if handles.video.n>1
+        set(handles.VideoSameDirectory,'enable','on');
+        set(handles.VideoSameROI,'enable','on');
+      end
+      set(handles.VideoFormat,'enable','on');
+      set(handles.VideoTimeStamps,'enable','on');
+      set(handles.VideoROI,'enable','on');
+      set(handles.VideoNumChannels,'enable','on');
+      set(handles.VideoFileFormat,'enable','on');
+      switch(handles.video.fileformats_available{handles.video.fileformat})
+        case {'Motion JPEG AVI','MPEG-4'}
+          set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
+        case 'Motion JPEG 2000'
+          set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+      end
+    else
+      set(handles.VideoHistogram,'enable','on');
+    end
+  end
 end
 
 set(handles.AnalogOutOnOff,'enable','off','value',handles.analog.out.on);
@@ -1198,7 +1210,7 @@ if(~handles.running)
     save_config_file(handles,fullfile(tmp,[handles.filename 'c.mat']));
   end
   
-  if handles.video.on 
+  if handles.video.on && ~handles.video.syncpulseonly
     clear av_video_callback
     handles=video_thread(handles);
     %update_video_params(handles);
@@ -1247,7 +1259,7 @@ elseif(handles.running)
     delete(handles.timer.update_display);
   end
 
-  if handles.video.on 
+  if handles.video.on && ~handles.video.syncpulseonly
     for i=1:handles.video.n
       try
       invoke(handles.video.actx(i), 'Execute', ...
@@ -2120,6 +2132,24 @@ guidata(hObject,handles);
 
 
 % --- Executes on selection change in VideoTimeStamps.
+function VideoSyncPulseOnly_Callback(hObject, eventdata, handles)
+% hObject    handle to VideoTimeStamps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns VideoTimeStamps contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from VideoTimeStamps
+
+handles.video.syncpulseonly=get(handles.VideoSyncPulseOnly,'value');
+if handles.video.syncpulseonly && (handles.video.counter==1)
+  handles.video.counter=2;
+  set(handles.VideoTrigger,'value',2)
+end
+update_figure(handles);
+guidata(hObject,handles);
+
+
+% --- Executes on selection change in VideoTimeStamps.
 function VideoTimeStamps_Callback(hObject, eventdata, handles)
 % hObject    handle to VideoTimeStamps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2331,6 +2361,9 @@ function VideoTrigger_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of VideoTrigger
 
+if handles.video.syncpulseonly && (get(handles.VideoTrigger,'value')==1)
+  set(handles.VideoTrigger,'value',2)
+end
 handles.video.counter=get(handles.VideoTrigger,'value');
 handles=configure_video_channels(handles);
 update_figure(handles);
