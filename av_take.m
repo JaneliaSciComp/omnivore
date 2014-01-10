@@ -351,6 +351,8 @@ if(handles.video.on && (handles.video.maxn>0))
     set(handles.VideoDirectory,'enable','off');
     set(handles.VideoSave,'value',0);
   end
+  set(handles.VideoSameDirectory,'value',handles.video.samedirectory);
+  set(handles.VideoSameROI,'value',handles.video.sameroi);
   set(handles.VideoTimeStamps,'value',handles.video.timestamps);
   set(handles.VideoFileFormat,'value',handles.video.fileformat);
   set(handles.VideoFileQuality,'string',handles.video.filequality);
