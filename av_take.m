@@ -979,7 +979,7 @@ for i=1:handles.video.n
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
       ['cd(''' pwd ''');  '...
-      'imaqmem(1e9);  '...
+      'imaqmem(1e10);  '...
       'vi=videoinput(''' handles.video.adaptor{i} ''',' num2str(handles.video.deviceid(i)) ',''' ...
           handles.video.formatlist{i}{handles.video.formatvalue(i)} ''');']);
 
@@ -1216,8 +1216,12 @@ if(~handles.running)
     %update_video_params(handles);
     handles=video_setup_preview(handles);
     for i=1:handles.video.n
-      invoke(handles.video.actx(i), 'Execute', ...
-         'start(vi);');
+      try
+        invoke(handles.video.actx(i), 'Execute', ...
+           'start(vi);');
+      catch
+        warning(['trouble starting vi of channel' num2str(i)]);
+      end
     end
   end
 
@@ -1262,42 +1266,54 @@ elseif(handles.running)
   if handles.video.on && ~handles.video.syncpulseonly
     for i=1:handles.video.n
       try
-      invoke(handles.video.actx(i), 'Execute', ...
-          'stop(vi);');
+        invoke(handles.video.actx(i), 'Execute', ...
+            'stop(vi);');
       catch
-        warning(['trouble closing channel' num2str(i)]);
+        warning(['trouble stopping vi of channel' num2str(i)]);
       end
     end
     handles=video_takedown_preview(handles);
     for i=1:handles.video.n
       if handles.video.save(i)
-        invoke(handles.video.actx(i), 'Execute', ...
-            ['tic; '...
-            'while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired) && (toc<10)) || (vi.FramesAvailable>0)) '...
-              'if(vi.FramesAvailable>0) ' ...
-                  'av_video_callback([],[],vi,' ...
-                  num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
-                  num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) '); ' ...
-              'else ' ...
-                'pause(0.1); ' ...
-              'end; ' ...
-            'end; ' ...
-            'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;']);
-        not_saved=handles.video.actx(i).GetVariable('not_saved','base');
-        if(not_saved>0)
-          warndlg([num2str(not_saved) ' frames have not been saved for camera ' num2str(i)]);
-        end
-        invoke(handles.video.actx(i), 'Execute', ...
-            'close(vifile);');
-%            'vifile=close(vi.DiskLogger)');
-        if handles.video.timestamps>1
+        try
           invoke(handles.video.actx(i), 'Execute', ...
-              'fclose(fid);');
+              ['tic; '...
+              'while(((vi.DiskLoggerFrameCount~=vi.FramesAcquired) && (toc<10)) || (vi.FramesAvailable>0)) '...
+                'if(vi.FramesAvailable>0) ' ...
+                    'av_video_callback([],[],vi,' ...
+                    num2str(handles.video.FPS) ',fid,' num2str(handles.verbose) ',' ...
+                    num2str(handles.video.curr==i) ',' num2str(handles.video.timestamps) '); ' ...
+                'else ' ...
+                  'pause(0.1); ' ...
+                'end; ' ...
+              'end; ' ...
+              'not_saved = vi.FramesAcquired - vi.DiskLoggerFrameCount;']);
+          not_saved=handles.video.actx(i).GetVariable('not_saved','base');
+          if(not_saved>0)
+            warndlg([num2str(not_saved) ' frames have not been saved for camera ' num2str(i)]);
+          end
+          invoke(handles.video.actx(i), 'Execute', ...
+              'close(vifile);');
+  %            'vifile=close(vi.DiskLogger)');
+          if handles.video.timestamps>1
+            invoke(handles.video.actx(i), 'Execute', ...
+                'fclose(fid);');
+          end
+        catch
+          warning(['trouble saving last few frames of channel ' num2str(i)]);
         end
       end
-      invoke(handles.video.actx(i), 'Execute', ...
-          'delete(vi);');      
-      handles.video.actx(i).Quit;
+      try
+        invoke(handles.video.actx(i), 'Execute', ...
+            'delete(vi);');
+      catch
+        warning(['trouble deleting vi of channel ' num2str(i)]);
+      end
+      try
+        handles.video.actx(i).Quit;
+      catch
+        warning(['trouble quitting actx of channel ' num2str(i)]);
+      end
     end
   end
 
@@ -2309,15 +2325,23 @@ end
 % ---
 function handles=video_setup_preview(handles)
 
-invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'set(fig,''visible'',''on'');  preview(vi,im);');
+try
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'set(fig,''visible'',''on'');  preview(vi,im);');
+catch
+  warning(['trouble setting up video preview of channel ' num2str(handles.video.curr)]);
+end
 
 
 % ---
 function handles=video_takedown_preview(handles)
 
-invoke(handles.video.actx(handles.video.curr), 'Execute', ...
-    'stoppreview(vi);  set(fig,''visible'',''off'');');
+try
+  invoke(handles.video.actx(handles.video.curr), 'Execute', ...
+      'stoppreview(vi);  set(fig,''visible'',''off'');');
+catch
+  warning(['trouble taking down video preview of channel ' num2str(handles.video.curr)]);
+end
   
 
 % --- Executes on selection change in VideoChannel.
