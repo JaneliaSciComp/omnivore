@@ -341,8 +341,11 @@ if(handles.video.on && (handles.video.maxn>0))
   set(handles.VideoDirectory,'string',handles.video.directory(handles.video.curr));
   set(handles.VideoFormat,'string',handles.video.formatlist{handles.video.curr},...
       'value',handles.video.formatvalue(handles.video.curr));
-  arrayfun(@(x) sprintf('trigger %d',x),0:(handles.video.ncounters-1),'uniformoutput',false);
-  set(handles.VideoTrigger,'string',{'free running' ans{:}});
+  tmp={};
+  if(handles.video.ncounters>0)
+    tmp=arrayfun(@(x) sprintf('trigger %d',x),0:(handles.video.ncounters-1),'uniformoutput',false);
+  end
+  set(handles.VideoTrigger,'string',{'free running' tmp{:}});
   set(handles.VideoTrigger,'value',handles.video.counter);
   if(handles.video.save(handles.video.curr))
     set(handles.VideoDirectory,'enable','on');
@@ -499,6 +502,8 @@ end
 % ---
 function handles=configure_video_channels(handles)
 
+if(~isfield(handles.analog,'session'))  return;  end
+
 i=1;
 while i<=length(handles.analog.session.Channels)
   if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.CounterOutputPulseGenerationChannel')
@@ -580,7 +585,7 @@ if(isfield(handles,'videoadaptors'))
   set(handles.VideoFileFormat,'String',handles.video.fileformats_available);
 
   %tmp=[];
-  maxn=0;  adaptor={};  deviceid=[];  devicename={};  formatlist={};
+  maxn=0;  adaptor={};  deviceid=[];  devicename={};  formatlist={};  params={};
   for currAdaptor=handles.videoadaptors.InstalledAdaptors
     if strcmp(char(currAdaptor),'winvideo')  continue;  end  
     info=imaqhwinfo(char(currAdaptor));
@@ -780,13 +785,16 @@ handles=guidata(hObject);
 % delete(handles.system_monitor.timer);
 % handles.system_monitor=[];
 
-if(isfield(handles,'daqdevices'))
-  if(handles.running)
-    uiwait(errordlg('please stop the recording first'));
+if(handles.running)
+  if(strcmp('no',questdlg('a recording is in progress.  force quit?','','yes','no','no')))
     return;
   end
-  save_config_file(handles,handles.rcfilename);
 end
+tmp=timerfind;
+if(~isempty(tmp))
+  stop(tmp);  delete(tmp);
+end
+save_config_file(handles,handles.rcfilename);
 delete(hObject);
 
 
@@ -1121,10 +1129,11 @@ if(~handles.running)
       return;
     end
   end
-  if((sum(handles.analog.out.play)>0) && handles.analog.in.record)
+  if(handles.analog.out.on && (sum(handles.analog.out.play)>0) && handles.analog.in.record)
     find([handles.analog.out.play],1,'first');
     if(handles.analog.out.fs(ans) ~= handles.analog.in.fs)
       uiwait(warndlg('analog input and output sampling rate must be equal'));
+      set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
     end
   end
@@ -1142,6 +1151,7 @@ if(~handles.running)
   if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
     if(isnan(rate) || isempty(rate) || (rate<1))
       uiwait(errordlg('sampling rate must be a positive integer'));
+      set(handles.StartStop,'enable','on');  drawnow('expose');
       return;
     else
       handles.analog.session.Rate=rate;
