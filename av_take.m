@@ -894,10 +894,10 @@ if handles.verbose>0
   tic
 end
 
-out=zeros(max(1024,max(handles.analog.out.fs)),handles.analog.out.n); 
+out=zeros(max(1024,max(round(handles.analog.session.Rate))),handles.analog.out.n); 
 for i=1:handles.analog.out.n
   if(handles.analog.out.play(i))
-    tmp=handles.analog.out.idx(i)+handles.analog.out.fs(i)-1;
+    tmp=handles.analog.out.idx(i)+round(handles.analog.session.Rate)-1;
     idx=min(tmp,length(handles.analog.out.y{i}));
     idx2=tmp-idx;
     out(:,i)=[handles.analog.out.y{i}(handles.analog.out.idx(i):idx); handles.analog.out.y{i}(1:idx2)];
