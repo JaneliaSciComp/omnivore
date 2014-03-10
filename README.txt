@@ -4,7 +4,8 @@ A collection of tools for streaming video and analog/digital time series
 to disk.  Frames are hardware triggered to insure synchronization with time
 series over long time periods.  Multiple cameras and multiple analog/digital
 channels can be recorded simultaneously.  Designed for behavioral and
-physiological neuroscience experiments.
+physiological neuroscience experiments.  Analog/digital output is also
+supported.
 
 
 SYSTEM REQUIREMENTS
@@ -15,8 +16,8 @@ data acquisition boards.
 
 A Microsoft Windows computer.
 
-Matlab 2013a or newer.  Alternatively, binary executables are available
-upon request.
+Matlab 2013a or newer, plus the Data Acquisition, Image Acquisition, Signal
+Processing, and Statistics toolboxes.
 
 
 MODULES
