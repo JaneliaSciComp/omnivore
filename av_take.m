@@ -571,7 +571,10 @@ if(isfield(handles,'daqdevices'))
   handles=configure_analog_input_channels(handles);
 
   idx=find(cellfun(@(x) strcmp(x,'CounterOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
-  handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
+  handles.video.ncounters=0;
+  if(~isempty(idx))
+      handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
+  end
 else
   set(handles.AnalogOutOnOff,'enable','off');
   set(handles.AnalogInOnOff,'enable','off');
@@ -984,7 +987,7 @@ switch(handles.video.fileformats_available{handles.video.fileformat})
 end
 
 for i=1:handles.video.n
-  handles.video.actx(i) = actxserver('Matlab.Application.Single.8.1');
+  handles.video.actx(i) = actxserver('Matlab.Application.Single');
 %   handles.video.actx(i).Visible=0;
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
@@ -1148,7 +1151,8 @@ if(~handles.running)
     rate=handles.video.FPS;
   end
   
-  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+  if(handles.analog.out.on || handles.analog.in.on || ...
+        (handles.video.on && handles.video.counter>1))
     if(isnan(rate) || isempty(rate) || (rate<1))
       uiwait(errordlg('sampling rate must be a positive integer'));
       set(handles.StartStop,'enable','on');  drawnow('expose');
@@ -1239,7 +1243,8 @@ if(~handles.running)
 
 %   guidata(hObject, handles);  % necessary??
 
-  if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
+  if(handles.analog.out.on || handles.analog.in.on || ...
+        (handles.video.on && (handles.video.counter>1)))
     handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.analog.session.IsContinuous=true;
