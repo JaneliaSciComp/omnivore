@@ -180,8 +180,8 @@ handles.running=0;
 handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
-
-
+        
+        
 % ---
 function update_figure(handles)
 
@@ -287,7 +287,9 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
     set(handles.AnalogInFs,'enable','on');
     set(handles.AnalogInTerminalConfiguration,'enable','on');
     set(handles.AnalogInRange,'enable','on');
-    set(handles.AnalogInFileFormat,'enable','on');
+    if(handles.analog.in.record)
+      set(handles.AnalogInFileFormat,'enable','on');
+    end
   end
   set(handles.AnalogInChannel,'enable','on');
   set(handles.AnalogInDirectory,'enable','on');
@@ -379,15 +381,18 @@ if(handles.video.on && (handles.video.maxn>0))
         set(handles.VideoSameROI,'enable','on');
       end
       set(handles.VideoFormat,'enable','on');
-      set(handles.VideoTimeStamps,'enable','on');
       set(handles.VideoROI,'enable','on');
       set(handles.VideoNumChannels,'enable','on');
-      set(handles.VideoFileFormat,'enable','on');
-      switch(handles.video.fileformats_available{handles.video.fileformat})
-        case {'Motion JPEG AVI','MPEG-4'}
-          set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
-        case 'Motion JPEG 2000'
-          set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+      if(handles.video.save(handles.video.curr))
+        set(handles.VideoTimeStamps,'enable','on');
+        set(handles.VideoFileFormat,'enable','on');
+        set(handles.VideoFileQuality,'enable','on');
+        switch(handles.video.fileformats_available{handles.video.fileformat})
+          case {'Motion JPEG AVI','MPEG-4'}
+            set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
+          case 'Motion JPEG 2000'
+            set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+        end
       end
     else
       set(handles.VideoHistogram,'enable','on');
@@ -2008,6 +2013,7 @@ if(get(handles.AnalogInRecord,'value'))
     handles.analog.in.record=1;
     handles.analog.in.directory=tmp;
     set(handles.AnalogInDirectory,'string',handles.analog.in.directory,'enable','on');
+    set(handles.AnalogInFileFormat,'enable','on');
     directory=tmp;
   else
     set(handles.AnalogInRecord,'value',0);
@@ -2015,6 +2021,7 @@ if(get(handles.AnalogInRecord,'value'))
 else
   handles.analog.in.record=0;
   set(handles.AnalogInDirectory,'enable','off');
+  set(handles.AnalogInFileFormat,'enable','off');
 end
 
 guidata(hObject,handles);
@@ -2152,6 +2159,9 @@ if(get(handles.VideoSave,'value'))
     end
     set(handles.VideoDirectory,'string',handles.video.directory{handles.video.curr});
     set(handles.VideoDirectory,'enable','on');
+    set(handles.VideoTimeStamps,'enable','on');
+    set(handles.VideoFileFormat,'enable','on');
+    set(handles.VideoFileQuality,'enable','on');
     directory2=tmp;
   else
     set(handles.VideoSave,'value',0);
@@ -2159,6 +2169,9 @@ if(get(handles.VideoSave,'value'))
 else
   handles.video.save(handles.video.curr)=0;
   set(handles.VideoDirectory,'enable','off');
+  set(handles.VideoTimeStamps,'enable','off');
+  set(handles.VideoFileFormat,'enable','off');
+  set(handles.VideoFileQuality,'enable','off');
 end
 guidata(hObject,handles);
 
