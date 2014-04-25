@@ -1,8 +1,8 @@
 Omnivore [![Picture](/jfrc_grey_180x40.png)](http://www.janelia.org)
 ========
 
-A collection of tools for streaming video and analog/digital time series to
-disk.  Synchronization with time series is insured over long time periods by
+A collection of tools for streaming video and analog/digital time series
+to disk.  Synchronization with time series is insured over long periods by
 either hardware triggering the video frames or saving their timestamps.
 Multiple cameras and multiple analog/digital channels can be recorded
 simultaneously by spreading the computational load across multiple CPU cores.
@@ -13,7 +13,7 @@ physiological neuroscience experiments but should generalize.
 System Requirements
 ===================
 
-A Microsoft Windows computer.
+A Microsoft Windows computer with as many CPU cores as video cameras.
 
 Matlab 2013a or newer, plus the Data Acquisition, Image Acquisition, Signal
 Processing, and Statistics toolboxes.
@@ -37,32 +37,47 @@ Analog input and output synchronized with video input
 ![screenshot](/av_take.png)
 
 Within each panel the radio button in the upper left corner turns that
-input/output on and off.  A separate radio button controls whether to save that
-data to disk or not.  All files are saved using the current date and time as
-the filename into the specified folder of choice.  The configuration pull-down
+input/output on and off.  A separate radio button controls whether to save
+that data to disk or not.  All files are saved using the current date and
+time as the filename into the specified folder of choice.  The pull-down
 menus on the right side of each panel are configured by querying the hardware
-of it's capabilities.  All buttons have self-documenting tooltip strings which
-can be displayed by hovering over them.
+of it's capabilities.  All buttons have self-documenting tooltip strings
+which can be displayed by hovering over them.
 
 **Analog output**:  Currently only .wav files are supported.  The appropriate
-sampling rate is automatically set from that stored in the metadata of the
-file.  The display is updated once per second and can be a time series,
-spectrum, spectrogram, or, for multi-channel data, an equalizer.  Only one
-channel is displayed at a time.
+sampling rate is automatically set from that stored in the metadata of
+the file.  The display is updated once per second and can be an equalizer,
+time series, spectrum, spectrogram.  For the latter cases only one channel
+is displayed at a time.
 
 **Analog input**:  The sampling rate must be specified in the text box in the
-lower right corner of this panel.  If analog data is also being output, the two
+lower right corner of the panel.  If analog data is also being output, the two
 sampling rates must be identical.  Currently data are stored in a custom binary
 format, as either 32- or 64-bit floating point numbers or 16-bit integers.  Use
 binread() to read it back in, or bin2wav() to convert it to a .wav file.
 
 **Video input**:  The cameras don't have to be the same make and model.  A
 different region of interest, video format, file format and file quality can be
-specified for each.  They must be identically triggered however, either free
+specified for each.  They must be identically triggered however, either freely
 running on their own clock, or hardware triggered by the data acquisition
-board.  For the latter, choose a counter output channel and frame rate.
+board.  For the latter, choose a counter output channel and frame rate.  The
+video from the selected channel is displayed in a separate window.
 
-[tempo](https://github.com/JaneliaSciComp/tempo)
+To begin a recording session click the green Start button.  A non-zero entry in
+the text box to the right automatically stops the recording after the specified
+number of minutes.
+
+Whereas all analog data is handled by a single CPU core, a separate
+instance of Matlab is automatically spawned to handle each video channel.
+This process can take a few seconds per channel, and can be monitored by
+hovering over the Matlab icon in the taskbar.  Real-time CPU and RAM usage
+are displayed in the upper right corner of the window.
+
+Settings are automatically saved to most\_recent\_av\_config.mat and re-loaded
+upon starting again.  One can also save them to and load them from a custom
+configuration file using the buttons in the upper left of the window.
+
+Use [tempo](https://github.com/JaneliaSciComp/tempo) to view the resulting data.
 
 di_take
 -------
