@@ -180,8 +180,8 @@ handles.running=0;
 handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
-
-
+        
+        
 % ---
 function update_figure(handles)
 
@@ -287,7 +287,9 @@ if(handles.analog.in.on && (handles.analog.in.maxn>0))
     set(handles.AnalogInFs,'enable','on');
     set(handles.AnalogInTerminalConfiguration,'enable','on');
     set(handles.AnalogInRange,'enable','on');
-    set(handles.AnalogInFileFormat,'enable','on');
+    if(handles.analog.in.record)
+      set(handles.AnalogInFileFormat,'enable','on');
+    end
   end
   set(handles.AnalogInChannel,'enable','on');
   set(handles.AnalogInDirectory,'enable','on');
@@ -379,15 +381,18 @@ if(handles.video.on && (handles.video.maxn>0))
         set(handles.VideoSameROI,'enable','on');
       end
       set(handles.VideoFormat,'enable','on');
-      set(handles.VideoTimeStamps,'enable','on');
       set(handles.VideoROI,'enable','on');
       set(handles.VideoNumChannels,'enable','on');
-      set(handles.VideoFileFormat,'enable','on');
-      switch(handles.video.fileformats_available{handles.video.fileformat})
-        case {'Motion JPEG AVI','MPEG-4'}
-          set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
-        case 'Motion JPEG 2000'
-          set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+      if(handles.video.save(handles.video.curr))
+        set(handles.VideoTimeStamps,'enable','on');
+        set(handles.VideoFileFormat,'enable','on');
+        set(handles.VideoFileQuality,'enable','on');
+        switch(handles.video.fileformats_available{handles.video.fileformat})
+          case {'Motion JPEG AVI','MPEG-4'}
+            set(handles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
+          case 'Motion JPEG 2000'
+            set(handles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+        end
       end
     else
       set(handles.VideoHistogram,'enable','on');
@@ -571,7 +576,10 @@ if(isfield(handles,'daqdevices'))
   handles=configure_analog_input_channels(handles);
 
   idx=find(cellfun(@(x) strcmp(x,'CounterOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
-  handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
+  handles.video.ncounters=0;
+  if(~isempty(idx))
+      handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
+  end
 else
   set(handles.AnalogOutOnOff,'enable','off');
   set(handles.AnalogInOnOff,'enable','off');
@@ -690,13 +698,13 @@ handles=query_hardware(handles);
 
 %delete(timerfind);
 
-% javaaddpath('javasysmon-0.3.4.jar');
-% import com.jezhumble.javasysmon.JavaSysMon.*
-% handles.system_monitor.object=com.jezhumble.javasysmon.JavaSysMon();
-% handles.system_monitor.timer=timer('Name','system_monitor','Period',1,'ExecutionMode','fixedRate',...
-%     'TimerFcn',@(hObject,eventdata)system_monitor_callback(hObject,eventdata,handles));
-% warning('off','MATLAB:Java:ConvertFromOpaque');
-% start(handles.system_monitor.timer);
+javaaddpath('javasysmon-0.3.4.jar');
+import com.jezhumble.javasysmon.JavaSysMon.*
+handles.system_monitor.object=com.jezhumble.javasysmon.JavaSysMon();
+handles.system_monitor.timer=timer('Name','system_monitor','Period',1,'ExecutionMode','fixedRate',...
+    'TimerFcn',@(hObject,eventdata)system_monitor_callback(hObject,eventdata,handles));
+warning('off','MATLAB:Java:ConvertFromOpaque');
+start(handles.system_monitor.timer);
 
 % Choose default command line output for av_take
 handles.output = hObject;
@@ -781,9 +789,9 @@ function figure_CloseRequestFcn(hObject, eventdata)
 
 handles=guidata(hObject);
 
-% stop(handles.system_monitor.timer);
-% delete(handles.system_monitor.timer);
-% handles.system_monitor=[];
+stop(handles.system_monitor.timer);
+delete(handles.system_monitor.timer);
+handles.system_monitor=[];
 
 if(handles.running)
   if(strcmp('no',questdlg('a recording is in progress.  force quit?','','yes','no','no')))
@@ -984,7 +992,7 @@ switch(handles.video.fileformats_available{handles.video.fileformat})
 end
 
 for i=1:handles.video.n
-  handles.video.actx(i) = actxserver('Matlab.Application.Single.8.1');
+  handles.video.actx(i) = actxserver('Matlab.Application.Single');
 %   handles.video.actx(i).Visible=0;
 %   handles.video.actx(i).MinimizeCommandServer;
   invoke(handles.video.actx(i), 'Execute', ...
@@ -1148,7 +1156,8 @@ if(~handles.running)
     rate=handles.video.FPS;
   end
   
-  if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+  if(handles.analog.out.on || handles.analog.in.on || ...
+        (handles.video.on && handles.video.counter>1))
     if(isnan(rate) || isempty(rate) || (rate<1))
       uiwait(errordlg('sampling rate must be a positive integer'));
       set(handles.StartStop,'enable','on');  drawnow('expose');
@@ -1239,7 +1248,8 @@ if(~handles.running)
 
 %   guidata(hObject, handles);  % necessary??
 
-  if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
+  if(handles.analog.out.on || handles.analog.in.on || ...
+        (handles.video.on && (handles.video.counter>1)))
     handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
     handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
     handles.analog.session.IsContinuous=true;
@@ -2003,6 +2013,7 @@ if(get(handles.AnalogInRecord,'value'))
     handles.analog.in.record=1;
     handles.analog.in.directory=tmp;
     set(handles.AnalogInDirectory,'string',handles.analog.in.directory,'enable','on');
+    set(handles.AnalogInFileFormat,'enable','on');
     directory=tmp;
   else
     set(handles.AnalogInRecord,'value',0);
@@ -2010,6 +2021,7 @@ if(get(handles.AnalogInRecord,'value'))
 else
   handles.analog.in.record=0;
   set(handles.AnalogInDirectory,'enable','off');
+  set(handles.AnalogInFileFormat,'enable','off');
 end
 
 guidata(hObject,handles);
@@ -2147,6 +2159,9 @@ if(get(handles.VideoSave,'value'))
     end
     set(handles.VideoDirectory,'string',handles.video.directory{handles.video.curr});
     set(handles.VideoDirectory,'enable','on');
+    set(handles.VideoTimeStamps,'enable','on');
+    set(handles.VideoFileFormat,'enable','on');
+    set(handles.VideoFileQuality,'enable','on');
     directory2=tmp;
   else
     set(handles.VideoSave,'value',0);
@@ -2154,6 +2169,9 @@ if(get(handles.VideoSave,'value'))
 else
   handles.video.save(handles.video.curr)=0;
   set(handles.VideoDirectory,'enable','off');
+  set(handles.VideoTimeStamps,'enable','off');
+  set(handles.VideoFileFormat,'enable','off');
+  set(handles.VideoFileQuality,'enable','off');
 end
 guidata(hObject,handles);
 
