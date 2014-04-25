@@ -698,13 +698,13 @@ handles=query_hardware(handles);
 
 %delete(timerfind);
 
-% javaaddpath('javasysmon-0.3.4.jar');
-% import com.jezhumble.javasysmon.JavaSysMon.*
-% handles.system_monitor.object=com.jezhumble.javasysmon.JavaSysMon();
-% handles.system_monitor.timer=timer('Name','system_monitor','Period',1,'ExecutionMode','fixedRate',...
-%     'TimerFcn',@(hObject,eventdata)system_monitor_callback(hObject,eventdata,handles));
-% warning('off','MATLAB:Java:ConvertFromOpaque');
-% start(handles.system_monitor.timer);
+javaaddpath('javasysmon-0.3.4.jar');
+import com.jezhumble.javasysmon.JavaSysMon.*
+handles.system_monitor.object=com.jezhumble.javasysmon.JavaSysMon();
+handles.system_monitor.timer=timer('Name','system_monitor','Period',1,'ExecutionMode','fixedRate',...
+    'TimerFcn',@(hObject,eventdata)system_monitor_callback(hObject,eventdata,handles));
+warning('off','MATLAB:Java:ConvertFromOpaque');
+start(handles.system_monitor.timer);
 
 % Choose default command line output for av_take
 handles.output = hObject;
@@ -789,9 +789,9 @@ function figure_CloseRequestFcn(hObject, eventdata)
 
 handles=guidata(hObject);
 
-% stop(handles.system_monitor.timer);
-% delete(handles.system_monitor.timer);
-% handles.system_monitor=[];
+stop(handles.system_monitor.timer);
+delete(handles.system_monitor.timer);
+handles.system_monitor=[];
 
 if(handles.running)
   if(strcmp('no',questdlg('a recording is in progress.  force quit?','','yes','no','no')))
