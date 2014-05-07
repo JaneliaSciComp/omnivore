@@ -80,7 +80,7 @@ handles.analog.in.highfreq=nan;
 handles.analog.in.nfft=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
-handles.analog.in.fileformat=1;
+handles.analog.in.fileformat=4;  % .wav
 handles.video.on=0;
 handles.video.syncpulseonly=0;
 handles.video.maxn=nan;
@@ -952,6 +952,23 @@ if(handles.analog.in.record)
         d=bsxfun(@minus,evt.Data,handles.analog.in.offset);
         d=bsxfun(@rdivide,d,handles.analog.in.step);
         fwrite(handles.analog.in.fid,d','int16');
+      case 4
+        data_length = numel(evt.Data) * 4;
+
+        fseek(handles.analog.in.fid,4,'bof');
+        chunk_size = fread(handles.analog.in.fid, 1, 'uint32', 0, 'ieee-le');
+        fseek(handles.analog.in.fid,4,'bof');
+        fwrite(handles.analog.in.fid,chunk_size + data_length,'uint32', 0, 'ieee-le'); 
+
+        fseek(handles.analog.in.fid,42,'bof');
+        subchunk_size = fread(handles.analog.in.fid, 1, 'uint32', 0, 'ieee-le');
+        fseek(handles.analog.in.fid,42,'bof');
+        fwrite(handles.analog.in.fid,subchunk_size + data_length, 'uint32', 0, 'ieee-le');
+
+        fseek(handles.analog.in.fid,0,'eof');
+        fwrite(handles.analog.in.fid, ...
+            evt.Data ./ handles.analog.in.ranges_available(handles.analog.in.range).Max, ...
+            'single', 0, 'ieee-le');
     end
 end
 
@@ -1173,13 +1190,15 @@ if(~handles.running)
     clear analog_in_callback
     handles.analog.in.fid = nan;
     if(handles.analog.in.record)
-      handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
       switch(handles.analog.in.fileformat)
         case 1  % version#=1, sample rate, nchan, (doubles)
+          handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
           fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
         case 2  % version#=2, sample rate, nchan, (singles)
+          handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
           fwrite(handles.analog.in.fid,[2 handles.analog.in.fs handles.analog.in.n],'double');
         case 3  % version#=3, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
+          handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
           fwrite(handles.analog.in.fid,[3 handles.analog.in.fs handles.analog.in.n],'double');
           if(handles.analog.out.on)
             analog_out_callback(hObject, eventdata, handles.figure1);
@@ -1201,6 +1220,12 @@ if(~handles.running)
               update_figure(handles);
               return;
           end
+        case 4
+          % the one extra (zero valued) sample tic at the beginning
+          % introduces a time shift of 1/Fs
+          wavwrite(zeros(1,handles.analog.in.n), handles.analog.in.fs, 32, ...
+              fullfile(handles.analog.in.directory,[handles.filename 'a.wav']));
+          handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.wav']),'r+');
       end
     end
     handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
