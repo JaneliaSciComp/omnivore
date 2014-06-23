@@ -698,7 +698,7 @@ handles=query_hardware(handles);
 
 %delete(timerfind);
 
-javaaddpath('javasysmon-0.3.4.jar');
+javaaddpath(fullfile(fileparts(mfilename('fullpath')),'javasysmon-0.3.4.jar'));
 import com.jezhumble.javasysmon.JavaSysMon.*
 handles.system_monitor.object=com.jezhumble.javasysmon.JavaSysMon();
 handles.system_monitor.timer=timer('Name','system_monitor','Period',1,'ExecutionMode','fixedRate',...
