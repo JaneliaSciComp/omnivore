@@ -479,6 +479,28 @@ end
 
 
 % ---
+function handles=configure_video_channels(handles)
+
+if(~isfield(handles.analog,'session'))  return;  end
+
+i=1;
+while i<=length(handles.analog.session.Channels)
+  if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.CounterOutputPulseGenerationChannel')
+    handles.analog.session.removeChannel(i);
+    break;
+  else
+    i=i+1;
+  end
+end
+
+if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(handles.video.FPS))
+  h=handles.analog.session.addCounterOutputChannel(...
+      handles.daqdevices.ID,handles.video.counter-2,'PulseGeneration');
+  set(h,'Frequency',handles.video.FPS);
+end
+ 
+
+% ---
 function set_video_param(obj,event,handles)
 
 data=get(handles.VideoParams,'data');
@@ -505,27 +527,55 @@ end
 
 
 % ---
-function handles=configure_video_channels(handles)
+function data=get_video_params(currAdaptor,DeviceID,format)
 
-if(~isfield(handles.analog,'session'))  return;  end
+vi=videoinput(char(currAdaptor),num2str(DeviceID),format);
 
-i=1;
-while i<=length(handles.analog.session.Channels)
-  if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.CounterOutputPulseGenerationChannel')
-    handles.analog.session.removeChannel(i);
-    break;
-  else
-    i=i+1;
+ss = getselectedsource(vi);
+a = get(ss);
+c = fieldnames(a);
+
+data={}; j = 1;
+%ignore properties: parent, selected, tag, type, frameTimeout,
+for i = 1:length(c)
+  if strcmpi(c{i},'parent')|strcmpi(c{i},'selected')|strcmpi(c{i},'tag')|...
+     strcmpi(c{i},'type')|strcmpi(c{i},'NormalizedBytesPerPacket')|...
+     strcmpi(c{i},'FrameTimeout')
+      continue
   end
+  data{j,1} = c{i}; data{j,2} = eval(['a.',c{i}]); 
+
+  pinfo=propinfo(ss,c{i});
+
+  switch pinfo.Constraint
+    case 'none'
+        data{j,3} = pinfo.ConstraintValue;
+    case 'bounded'
+        tmp =  pinfo.ConstraintValue;
+        data{j,3} = ['  [',num2str(tmp(1)),' ',num2str(tmp(2)),']'];
+    case 'enum'
+        str = '';
+        for i = 1:length(pinfo.ConstraintValue)
+            str = [str,', ',pinfo.ConstraintValue{i}];
+        end
+        str(1:2) = ' ';
+        data{j,3} = str;
+  end
+
+  data{j,4}=pinfo.ReadOnly;
+
+  j = j+1;
 end
 
-if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(handles.video.FPS))
-  h=handles.analog.session.addCounterOutputChannel(...
-      handles.daqdevices.ID,handles.video.counter-2,'PulseGeneration');
-  set(h,'Frequency',handles.video.FPS);
+% a hack to turn >1 numbers into string
+tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
+for i=1:length(tmp)
+  foo=data(tmp);
+  data{tmp}=num2str([foo{1}]);
 end
- 
 
+delete(vi);
+        
 % ---
 function handles=query_hardware(handles)
 
@@ -605,54 +655,8 @@ if(isfield(handles,'videoadaptors'))
       devicename=[devicename {info.DeviceInfo.DeviceName}];
       formatlist={formatlist{:} info.DeviceInfo.SupportedFormats};
       for currDevice=1:tmp
-        vi=videoinput(char(currAdaptor),num2str(info.DeviceIDs{currDevice}));
-        
-        ss = getselectedsource(vi);
-        a = get(ss);
-        c = fieldnames(a);
-
-        data={}; j = 1;
-        %ignore properties: parent, selected, tag, type, frameTimeout,
-        for i = 1:length(c)
-            if strcmpi(c{i},'parent')|strcmpi(c{i},'selected')|strcmpi(c{i},'tag')|...
-               strcmpi(c{i},'type')|strcmpi(c{i},'NormalizedBytesPerPacket')|...
-               strcmpi(c{i},'FrameTimeout')
-                continue
-            end
-            data{j,1} = c{i}; data{j,2} = eval(['a.',c{i}]); 
-
-            pinfo=propinfo(ss,c{i});
-
-            switch pinfo.Constraint
-                case 'none'
-                    data{j,3} = pinfo.ConstraintValue;
-                case 'bounded'
-                    tmp =  pinfo.ConstraintValue;
-                    data{j,3} = ['  [',num2str(tmp(1)),' ',num2str(tmp(2)),']'];
-                case 'enum'
-                    str = '';
-                    for i = 1:length(pinfo.ConstraintValue)
-                        str = [str,', ',pinfo.ConstraintValue{i}];
-                    end
-                    str(1:2) = ' ';
-                    data{j,3} = str;
-            end
-
-            data{j,4}=pinfo.ReadOnly;
-
-            j = j+1;
-        end
-
-        % a hack to turn >1 numbers into string
-        tmp=find([cellfun(@(x) isnumeric(x) & (numel(x)>1),data)]);
-        for i=1:length(tmp)
-          foo=data(tmp);
-          data{tmp}=num2str([foo{1}]);
-        end
-
-        params{currDevice}=data;
-
-        delete(vi);
+        params{currDevice}=get_video_params(...
+            currAdaptor, info.DeviceIDs{currDevice}, info.DeviceInfo.SupportedFormats{1});
       end
     end
   end
@@ -2243,8 +2247,13 @@ function VideoFormat_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns VideoFormat contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from VideoFormat
 
-handles.video.formatvalue(handles.video.curr)=get(handles.VideoFormat,'value');
+i=handles.video.curr;
+handles.video.formatvalue(i)=get(handles.VideoFormat,'value');
 %handles.video.params{handles.video.curr}=[];
+handles.video.params{i}=get_video_params(...
+  handles.video.adaptor(i),...
+  handles.video.deviceid(i),...
+  handles.video.formatlist{i}{handles.video.formatvalue(i)});
 update_figure(handles);
 guidata(hObject,handles);
 
