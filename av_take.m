@@ -769,6 +769,7 @@ fields_to_remove={
     'videoadaptors'
     'listenerAnalogIn'
     'listenerAnalogOut'
+    'system_monitor'
     'timer'};
 for i = 1:length(fields_to_remove)
   if isfield(handles, fields_to_remove{i})
