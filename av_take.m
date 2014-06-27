@@ -698,6 +698,11 @@ else
   handles=initialize(handles);
 end
 
+[s,handles.git]=system('"c:\\Program Files (x86)\Git\bin\git" log -1 --pretty=format:"%ci %H"');
+if s
+    warning('cant''t find git.  to save version info, git-bash must be installed.');
+end
+
 handles=query_hardware(handles);
 
 %delete(timerfind);
