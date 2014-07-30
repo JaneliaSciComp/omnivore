@@ -131,9 +131,9 @@ end
 function handles=query_hardware(handles)
 
 try
-  % next two lines only needed for roian's rig
-  daq.reset;
-  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  % next two lines only needed for roian's rig, and prohibit using chr & hyg simultaneously
+  % daq.reset;
+  % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   daq.getDevices;
   handles.daqdevices=ans(1);
 catch
