@@ -138,34 +138,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-function AnalogInFs_Callback(hObject, eventdata, handles)
-% hObject    handle to AnalogInFs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of AnalogInFs as text
-%        str2double(get(hObject,'String')) returns contents of AnalogInFs as a double
-
-omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.analog.in.fs=str2num(get(hObject,'String'));
-guidata(handles.omnivore,omnivoreHandles);
-
-
-% --- Executes during object creation, after setting all properties.
-function AnalogInFs_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to AnalogInFs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
 function AnalogInNumChannels_Callback(hObject, eventdata, handles)
 % hObject    handle to AnalogInNumChannels (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB

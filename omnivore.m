@@ -22,7 +22,7 @@ function varargout = omnivore(varargin)
 
 % Edit the above text to modify the response to help omnivore
 
-% Last Modified by GUIDE v2.5 30-Jul-2014 08:59:47
+% Last Modified by GUIDE v2.5 31-Jul-2014 16:27:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,7 +52,7 @@ function omnivore_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to omnivore (see VARARGIN)
 
-handles.rcfilename = 'most_recent_av_config.mat';
+handles.rcfilename = 'most_recent_omnivore_config.mat';
 if(exist(handles.rcfilename)==2)
   handles=load_config_file(handles.rcfilename,handles);
 else
@@ -66,6 +66,7 @@ end
 
 handles.configure_analog_input_channels = @configure_analog_input_channels;
 handles.configure_analog_output_channels = @configure_analog_output_channels;
+handles.configure_digital_channels = @configure_digital_channels;
 handles.update_figure = @update_figure;
 handles.video_setup_preview = @video_setup_preview;
 handles.video_takedown_preview = @video_takedown_preview;
@@ -124,14 +125,13 @@ if(handles.running)
     return;
   end
 end
-tmp=timerfind;
-if(~isempty(tmp))
-  stop(tmp);  delete(tmp);
-end
 save_config_file(handles,handles.rcfilename);
 
 if(isfield(handles,'analogGui'))
   delete(handles.analogGui);
+end
+if(isfield(handles,'digitalGui'))
+  delete(handles.digitalGui);
 end
 if(isfield(handles,'videoGui'))
   delete(handles.videoGui);
@@ -153,6 +153,7 @@ if(isnumeric(file) && isnumeric(directory) && (file==0) && (directory==0))  retu
 handles=load_config_file(fullfile(directory,file),handles);
 handles=configure_analog_output_channels(handles);
 handles=configure_analog_input_channels(handles);
+handles=configure_digital_channels(handles);
 handles=configure_video_channels(handles);
 update_figure(handles);
 guidata(hObject, handles);
@@ -200,65 +201,46 @@ end
 set(handles.StartStop,'enable','off');  drawnow;
 
 if(~handles.running)
-  if(sum(handles.analog.out.play)>0)
-    if(sum(diff([handles.analog.out.fs(logical([handles.analog.out.play]))]))>0)
-      uiwait(errordlg('analog output sampling rates must be equal'));
-      set(handles.StartStop,'enable','on');  drawnow('expose');
-      return;
-    end
-  end
-  if(handles.analog.out.on && (sum(handles.analog.out.play)>0) && handles.analog.in.record)
-    find([handles.analog.out.play],1,'first');
-    if(handles.analog.out.fs(ans) ~= handles.analog.in.fs)
-      uiwait(warndlg('analog input and output sampling rate must be equal'));
-      set(handles.StartStop,'enable','on');  drawnow('expose');
-    return;
-    end
-  end
-  
   handles.filename=datestr(now,30);
-  if handles.analog.out.on
-    find([handles.analog.out.play],1,'first');
-    rate=handles.analog.out.fs(ans);
-  elseif handles.analog.in.on
-    rate=handles.analog.in.fs;
+  if isfield(handles,'session')
+    rate=handles.samplingrate;
   else
     rate=handles.video.FPS;
   end
   
   if(handles.analog.out.on || handles.analog.in.on || ...
+         handles.digital.out.on || handles.digital.in.on || ...
         (handles.video.on && handles.video.counter>1))
     if(isnan(rate) || isempty(rate) || (rate<1))
       uiwait(errordlg('sampling rate must be a positive integer'));
       set(handles.StartStop,'enable','on');  drawnow('expose');
       return;
     else
-      handles.analog.session.Rate=rate;
+      handles.session.Rate=rate;
     end
   end
 
   handles.running=1;
   
   if(handles.analog.in.on)
-    clear analog_in_callback
     handles.analog.in.fid = nan;
     if(handles.analog.in.record)
       switch(handles.analog.in.fileformat)
         case 1  % version#=1, sample rate, nchan, (doubles)
           handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
-          fwrite(handles.analog.in.fid,[1 handles.analog.in.fs handles.analog.in.n],'double');
+          fwrite(handles.analog.in.fid,[1 handles.samplingrate handles.analog.in.n],'double');
         case 2  % version#=2, sample rate, nchan, (singles)
           handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
-          fwrite(handles.analog.in.fid,[2 handles.analog.in.fs handles.analog.in.n],'double');
+          fwrite(handles.analog.in.fid,[2 handles.samplingrate handles.analog.in.n],'double');
         case 3  % version#=3, sample rate, nchan, step, offset, (int16s = round((doubles-offset)/step))
           handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']),'w');
-          fwrite(handles.analog.in.fid,[3 handles.analog.in.fs handles.analog.in.n],'double');
+          fwrite(handles.analog.in.fid,[3 handles.samplingrate handles.analog.in.n],'double');
           if(handles.analog.out.on)
-            analog_out_callback(hObject, eventdata, handles.figure1);
+            out_callback(hObject, eventdata, handles.figure1);
           end
           handles.analog.in.step=[];
           handles.analog.in.offset=[];
-          data=handles.analog.session.startForeground;
+          data=handles.session.startForeground;
           for i=1:size(data,2)
             handles.analog.in.step(i)=min(diff([nan; unique(data(:,i))]));
             handles.analog.in.offset(i)=mean(mod(data(:,i),handles.analog.in.step(i)));
@@ -276,27 +258,57 @@ if(~handles.running)
         case 4
           % the one extra (zero valued) sample tic at the beginning
           % introduces a time shift of 1/Fs
-          wavwrite(zeros(1,handles.analog.in.n), handles.analog.in.fs, 32, ...
-              fullfile(handles.analog.in.directory,[handles.filename 'a.wav']));
-          handles.analog.in.fid = fopen(fullfile(handles.analog.in.directory,[handles.filename 'a.wav']),'r+');
+          tmp2=fullfile(handles.analog.in.directory,[handles.filename 'a.wav']);
+          audiowrite(tmp2, zeros(1,handles.analog.in.n), handles.samplingrate, 'bitspersample', 32);
+          handles.analog.in.fid = fopen(tmp2,'r+');
       end
     end
-    handles.listenerAnalogIn=handles.analog.session.addlistener('DataAvailable',...
-        @(hObject,eventdata)analog_in_callback(hObject,eventdata,handles.figure1));
   end
 
-  if(handles.analog.out.on)
+  if(handles.digital.in.on)
+    handles.digital.in.fid = nan;
+    % the one extra (zero valued) sample tic at the beginning
+    % introduces a time shift of 1/Fs
+    tmp=32;
+    if(handles.digital.in.n<=8)
+      tmp=8;
+    elseif(handles.digital.in.n<=16)
+      tmp=16;
+    end
+    tmp2=fullfile(handles.digital.in.directory,[handles.filename 'd.wav']);
+    audiowrite(tmp2, uint8(0), handles.samplingrate, 'bitspersample', tmp);
+    handles.digital.in.fid = fopen(tmp2,'r+');
+  end
+  
+  if(handles.analog.in.on || handles.digital.in.on)
+    clear in_callback
+    handles.listenerIn=handles.session.addlistener('DataAvailable',...
+        @(hObject,eventdata)in_callback(hObject,eventdata,handles.figure1));
+  end
+
+  if(handles.analog.out.on || handles.digital.out.on)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
+    handles.digital.out.idx(logical(handles.digital.out.play))=1;
     guidata(hObject, handles);
-    for(i=1:5)  analog_out_callback(hObject, eventdata, handles.figure1);  end
+    tmp.Source.Channels=handles.session.Channels;
+    for(i=1:5)  out_callback(hObject, tmp, handles.figure1);  end
     handles=guidata(hObject);
-    handles.listenerAnalogOut=handles.analog.session.addlistener('DataRequired',...
-        @(hObject,eventdata)analog_out_callback(hObject,eventdata,handles.figure1));
+    handles.listenerOut=handles.session.addlistener('DataRequired',...
+        @(hObject,eventdata)out_callback(hObject,eventdata,handles.figure1));
   end
 
+  if((handles.digital.out.on || handles.digital.in.on) && ...
+      ~handles.analog.out.on && ~handles.analog.in.on)
+    handles.session.addAnalogInputChannel(handles.daqdevices.ID,0,'voltage');
+    handles.listenerIn=handles.session.addlistener('DataAvailable',...
+        @(hObject,eventdata) hObject);
+  end
+  
   tmp=[];
   if(handles.analog.in.record)
     tmp=handles.analog.in.directory;
+  elseif(handles.digital.in.record)
+    tmp=handles.digital.in.directory;
   else
     for i=1:handles.video.n
       if handles.video.save(i)
@@ -327,11 +339,12 @@ if(~handles.running)
 %   guidata(hObject, handles);  % necessary??
 
   if(handles.analog.out.on || handles.analog.in.on || ...
+        handles.digital.out.on || handles.digital.in.on || ...
         (handles.video.on && (handles.video.counter>1)))
-    handles.analog.session.NotifyWhenDataAvailableExceeds=round(handles.analog.session.Rate);
-    handles.analog.session.NotifyWhenScansQueuedBelow=5*round(handles.analog.session.Rate);
-    handles.analog.session.IsContinuous=true;
-    handles.analog.session.startBackground;
+    handles.session.NotifyWhenDataAvailableExceeds=round(handles.session.Rate);
+    handles.session.NotifyWhenScansQueuedBelow=5*round(handles.session.Rate);
+    handles.session.IsContinuous=true;
+    handles.session.startBackground;
   end
   handles.triggertime=clock;
 
@@ -342,22 +355,33 @@ if(~handles.running)
 %   guidata(hObject, handles);  % necessary??
 
 elseif(handles.running)
-  if(handles.analog.out.on || handles.analog.in.on || (handles.video.on && (handles.video.counter>1)))
-    handles.analog.session.stop();
-    handles.analog.session.IsContinuous=false;
+  if(handles.analog.out.on || handles.analog.in.on || ...
+      handles.digital.out.on || handles.digital.in.on || ...
+      (handles.video.on && (handles.video.counter>1)))
+    handles.session.stop();
+    handles.session.IsContinuous=false;
   end
 
-  if(handles.analog.out.on)
-    delete(handles.listenerAnalogOut);
+  if(handles.analog.out.on || handles.digital.out.on)
+    delete(handles.listenerOut);
   end
   
-  if(handles.analog.in.on)
-    delete(handles.listenerAnalogIn);
+  if(handles.analog.in.on || handles.digital.in.on)
+    delete(handles.listenerIn);
     if(handles.analog.in.record)
       fclose(handles.analog.in.fid);
     end
+    if(handles.digital.in.record)
+      fclose(handles.digital.in.fid);
+    end
   end
 
+  if((handles.digital.out.on || handles.digital.in.on) && ...
+      ~handles.analog.out.on && ~handles.analog.in.on)
+    configure_analog_input_channels(handles);
+    delete(handles.listenerIn);
+  end
+  
   if(isvalid(handles.timer.update_display))
     stop(handles.timer.update_display);
     delete(handles.timer.update_display);
@@ -493,8 +517,8 @@ handles.analog.out.n=nan;
 handles.analog.out.curr=nan;
 handles.analog.out.play=[];
 handles.analog.out.file={};
-handles.analog.out.fs=[];
 handles.analog.out.y={};
+handles.analog.out.fs=[];
 handles.analog.out.idx=[];
 handles.analog.out.style=1;
 handles.analog.out.autoscale=0;
@@ -510,7 +534,6 @@ handles.analog.in.n=nan;
 handles.analog.in.curr=nan;
 handles.analog.in.record=0;
 handles.analog.in.directory='';
-handles.analog.in.fs=nan;
 handles.analog.in.style=1;
 handles.analog.in.autoscale=0;
 handles.analog.in.logscale=0;
@@ -521,6 +544,23 @@ handles.analog.in.nfft=1;
 handles.analog.in.range=1;
 handles.analog.in.terminal_configuration=1;
 handles.analog.in.fileformat=4;  % .wav
+handles.digital.out.on=0;
+handles.digital.out.maxn=nan;
+handles.digital.out.n=nan;
+handles.digital.out.play=0;
+handles.digital.out.file='';
+handles.digital.out.fs=nan;
+handles.digital.out.style=1;
+handles.digital.out.autoscale=0;
+handles.digital.out.y=[];
+handles.digital.out.idx=nan;
+handles.digital.in.on=0;
+handles.digital.in.maxn=nan;
+handles.digital.in.n=nan;
+handles.digital.in.record=0;
+handles.digital.in.directory='';
+handles.digital.in.style=1;
+handles.digital.in.autoscale=0;
 handles.video.on=0;
 handles.video.syncpulseonly=0;
 handles.video.maxn=nan;
@@ -552,6 +592,7 @@ handles.running=0;
 handles.filename='';
 handles.timelimit=0;
 handles.verbose=0;
+handles.samplingrate=nan;
 
 
 % ---
@@ -582,7 +623,6 @@ handles.analog.in.n=handles_saved.analog.in.n;
 handles.analog.in.curr=handles_saved.analog.in.curr;
 handles.analog.in.record=handles_saved.analog.in.record;
 handles.analog.in.directory=handles_saved.analog.in.directory;
-handles.analog.in.fs=handles_saved.analog.in.fs;
 handles.analog.in.style=handles_saved.analog.in.style;
 handles.analog.in.autoscale=handles_saved.analog.in.autoscale;
 handles.analog.in.logscale=handles_saved.analog.in.logscale;
@@ -593,6 +633,23 @@ handles.analog.in.nfft=handles_saved.analog.in.nfft;
 handles.analog.in.range=handles_saved.analog.in.range;
 handles.analog.in.terminal_configuration=handles_saved.analog.in.terminal_configuration;
 handles.analog.in.fileformat=handles_saved.analog.in.fileformat;
+handles.digital.out.on=handles_saved.digital.out.on;
+handles.digital.out.maxn=handles_saved.digital.out.maxn;
+handles.digital.out.n=handles_saved.digital.out.n;
+handles.digital.out.play=handles_saved.digital.out.play;
+handles.digital.out.file=handles_saved.digital.out.file;
+handles.digital.out.fs=handles_saved.digital.out.fs;
+handles.digital.out.style=handles_saved.digital.out.style;
+handles.digital.out.autoscale=handles_saved.digital.out.autoscale;
+handles.digital.out.y=handles_saved.digital.out.y;
+handles.digital.out.idx=handles_saved.digital.out.idx;
+handles.digital.in.on=handles_saved.digital.in.on;
+handles.digital.in.maxn=handles_saved.digital.in.maxn;
+handles.digital.in.n=handles_saved.digital.in.n;
+handles.digital.in.record=handles_saved.digital.in.record;
+handles.digital.in.directory=handles_saved.digital.in.directory;
+handles.digital.in.style=handles_saved.digital.in.style;
+handles.digital.in.autoscale=handles_saved.digital.in.autoscale;
 handles.video.on=handles_saved.video.on;
 handles.video.syncpulseonly=handles_saved.video.syncpulseonly;
 handles.video.maxn=handles_saved.video.maxn;
@@ -620,6 +677,7 @@ handles.running=0;
 handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
+handles.samplingrate=handles_saved.samplingrate;
         
         
 % ---
@@ -634,18 +692,16 @@ end
 
 fields_to_remove={
     'daqdevices'
+    'session'
     'videoadaptors'
-    'listenerAnalogIn'
-    'listenerAnalogOut'
+    'listenerIn'
+    'listenerOut'
     'system_monitor'
     'timer'};
 for i = 1:length(fields_to_remove)
   if isfield(handles, fields_to_remove{i})
       handles = rmfield(handles, fields_to_remove{i});
   end
-end
-if isfield(handles.analog, 'session')
-  handles.analog = rmfield(handles.analog, 'session');
 end
 if isfield(handles.analog.out, 'ranges_available')
   handles.analog.out = rmfield(handles.analog.out, 'ranges_available');
@@ -691,8 +747,6 @@ if(isfield(handles,'analogGui'))
     set(analogHandles.AnalogOutLowFreq,'string',handles.analog.out.lowfreq);
     set(analogHandles.AnalogOutNFFT,'string',handles.analog.out.nfft);
     set(analogHandles.AnalogOutFile,'string',handles.analog.out.file{handles.analog.out.curr});
-    find([handles.analog.out.play],1,'first');
-    set(analogHandles.AnalogOutFs,'string',num2str(handles.analog.out.fs(ans)));
     if(handles.analog.out.play(handles.analog.out.curr))
       set(analogHandles.AnalogOutFile,'enable','on');
       set(analogHandles.AnalogOutPlay,'value',1);
@@ -727,7 +781,6 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogInRecord,'enable','off');
   set(analogHandles.AnalogInNumChannels,'enable','off');
   set(analogHandles.AnalogInChannel,'enable','off');
-  set(analogHandles.AnalogInFs,'enable','off');
   set(analogHandles.AnalogInRange,'enable','off');
   set(analogHandles.AnalogInTerminalConfiguration,'enable','off');
   set(analogHandles.AnalogInFileFormat,'enable','off');
@@ -747,7 +800,6 @@ if(isfield(handles,'analogGui'))
     set(analogHandles.AnalogInTerminalConfiguration,'value',handles.analog.in.terminal_configuration);
     set(analogHandles.AnalogInFileFormat,'value',handles.analog.in.fileformat);
     set(analogHandles.AnalogInDirectory,'string',handles.analog.in.directory);
-    set(analogHandles.AnalogInFs,'string',num2str(handles.analog.in.fs));
     set(analogHandles.AnalogInAutoScale,'value',handles.analog.in.autoscale);
     set(analogHandles.AnalogInLogScale,'value',handles.analog.in.logscale);
     set(analogHandles.AnalogInOnePercent,'value',handles.analog.in.onepercent);
@@ -766,7 +818,6 @@ if(isfield(handles,'analogGui'))
       set(analogHandles.AnalogInRecord,'enable','on');
       set(analogHandles.AnalogInNumChannels,'enable','on');
       set(analogHandles.AnalogInChannel,'enable','on');
-      set(analogHandles.AnalogInFs,'enable','on');
       set(analogHandles.AnalogInTerminalConfiguration,'enable','on');
       set(analogHandles.AnalogInRange,'enable','on');
       if(handles.analog.in.record)
@@ -793,6 +844,65 @@ if(isfield(handles,'analogGui'))
     if(ismember(handles.analog.in.style,[2 3]))
       set(analogHandles.AnalogInHighFreq,'enable','on');
       set(analogHandles.AnalogInLowFreq,'enable','on');
+    end
+  end
+end
+
+if(isfield(handles,'digitalGui'))
+  digitalHandles = guidata(handles.digitalGui);
+  set(digitalHandles.DigitalOutPlay,'enable','off');
+  set(digitalHandles.DigitalOutNumChannels,'enable','off');
+  set(digitalHandles.DigitalOutAutoScale,'enable','off');
+  set(digitalHandles.DigitalOutFile,'enable','off');
+  set(digitalHandles.DigitalOutStyle,'enable','off');
+  if(handles.digital.out.on && (handles.digital.out.maxn>0))
+    set(digitalHandles.DigitalOutNumChannels,'string',handles.digital.out.n);
+    set(digitalHandles.DigitalOutAutoScale,'value',handles.digital.out.autoscale);
+    set(digitalHandles.DigitalOutFile,'string',handles.digital.out.file);
+    if(handles.digital.out.play)
+      set(digitalHandles.DigitalOutFile,'enable','on');
+      set(digitalHandles.DigitalOutPlay,'value',1);
+    else
+      set(digitalHandles.DigitalOutFile,'enable','off');
+      set(digitalHandles.DigitalOutPlay,'value',0);
+    end
+    set(digitalHandles.DigitalOutStyle,'value',handles.digital.out.style);
+    if(~handles.running)
+      set(digitalHandles.DigitalOutPlay,'enable','on');
+      set(digitalHandles.DigitalOutNumChannels,'enable','on');
+    end
+    set(digitalHandles.DigitalOutFile,'enable','on');
+    set(digitalHandles.DigitalOutStyle,'enable','on');
+    if(handles.digital.out.style==2)
+      set(digitalHandles.DigitalOutAutoScale,'enable','on');
+    end
+  end
+
+  set(digitalHandles.DigitalInRecord,'enable','off');
+  set(digitalHandles.DigitalInNumChannels,'enable','off');
+  set(digitalHandles.DigitalInAutoScale,'enable','off');
+  set(digitalHandles.DigitalInDirectory,'enable','off');
+  set(digitalHandles.DigitalInStyle,'enable','off');
+  if(handles.digital.in.on && (handles.digital.in.maxn>0))
+    set(digitalHandles.DigitalInNumChannels,'string',handles.digital.in.n);
+    set(digitalHandles.DigitalInDirectory,'string',handles.digital.in.directory);
+    set(digitalHandles.DigitalInAutoScale,'value',handles.digital.in.autoscale);
+    if(handles.digital.in.record)
+      set(digitalHandles.DigitalInDirectory,'enable','on');
+      set(digitalHandles.DigitalInRecord,'value',1);
+    else
+      set(digitalHandles.DigitalInDirectory,'enable','off');
+      set(digitalHandles.DigitalInRecord,'value',0);
+    end
+    set(digitalHandles.DigitalInStyle,'value',handles.digital.in.style);
+    if(~handles.running)
+      set(digitalHandles.DigitalInRecord,'enable','on');
+      set(digitalHandles.DigitalInNumChannels,'enable','on');
+    end
+    set(digitalHandles.DigitalInDirectory,'enable','on');
+    set(digitalHandles.DigitalInStyle,'enable','on');
+    if(handles.digital.in.style==2)
+      set(digitalHandles.DigitalInAutoScale,'enable','on');
     end
   end
 end
@@ -889,11 +999,19 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogOutOnOff,'enable','off','value',handles.analog.out.on);
   set(analogHandles.AnalogInOnOff,'enable','off','value',handles.analog.in.on);
 end
+if(isfield(handles,'digitalGui'))
+  set(digitalHandles.DigitalOutOnOff,'enable','off','value',handles.digital.out.on);
+  set(digitalHandles.DigitalInOnOff,'enable','off','value',handles.digital.in.on);
+end
 if(isfield(handles,'videoGui'))
   set(videoHandles.VideoOnOff,'enable','off','value',handles.video.on);
 end
 set(handles.TimeLimit,'enable','off','string',num2str(handles.timelimit));
 set(handles.Verbose,'enable','off','value',handles.verbose+1);
+if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
+  set(handles.SamplingRate,'enable','off');
+end
+
 if(~handles.running)
   if(isfield(handles,'analogGui'))
     if(handles.analog.in.maxn>0)
@@ -903,6 +1021,18 @@ if(~handles.running)
       set(analogHandles.AnalogOutOnOff,'enable','on');
     end
   end
+  if(isfield(handles,'digitalGui'))
+    if(handles.digital.in.maxn>0)
+      set(digitalHandles.DigitalInOnOff,'enable','on');
+    end
+    if(handles.digital.out.maxn>0)
+      set(digitalHandles.DigitalOutOnOff,'enable','on');
+    end
+  end
+  if((isfield(handles,'analogGui') && handles.analog.in.on && (handles.analog.in.n>0)) || ...
+    (isfield(handles,'digitalGui') && handles.digital.in.on && (handles.digital.in.n>0)))
+    set(handles.SamplingRate,'enable','on','string',handles.samplingrate);
+  end
   if(isfield(handles,'videoGui') && (handles.video.maxn>0))
     set(videoHandles.VideoOnOff,'enable','on');
   end
@@ -910,8 +1040,33 @@ if(~handles.running)
   set(handles.Verbose,'enable','on');
 end
 
+tmp=[];  tmp2={};
+if(strcmp(get(handles.SamplingRate,'enable'),'on'))
+  tmp=[tmp handles.samplingrate];
+  tmp2{end+1}=['box = ' num2str(get(handles.SamplingRate,'string'))];
+end
+if(isfield(handles,'analogGui') && handles.analog.out.on && (sum(handles.analog.out.play)>0))
+  tmp=[tmp handles.analog.out.fs(logical(handles.analog.out.play))];
+  for(i=1:handles.analog.out.n)
+    if(~handles.analog.out.play(i))  continue;  end
+    tmp2{end+1}=['analog #' num2str(i) ' = ' num2str(handles.analog.out.fs(i))];
+  end
+end
+if(isfield(handles,'digitalGui') && handles.digital.out.on && (handles.digital.out.n>0))
+  tmp=[tmp handles.digital.out.fs];
+  tmp2{end+1}=['digital = ' num2str(handles.digital.out.fs)];
+end
+handles.samplingrate=median(tmp);
+if(length(unique(tmp))>1)
+  tmp2={'not all sampling rates are the same:' tmp2{:}};
+  tmp2{end+1}=['will go with ' num2str(handles.samplingrate) ' for now'];
+  warndlg(tmp2);
+end
+
 set(handles.StartStop,'enable','off');
-if(handles.analog.out.on || handles.analog.in.on || handles.video.on)
+if((isfield(handles,'analogGui') && (handles.analog.out.on || handles.analog.in.on)) || ...
+   (isfield(handles,'digitalGui') && (handles.digital.out.on || handles.digital.in.on)) || ...
+   handles.video.on)
   set(handles.StartStop,'enable','on');
 end
 if(~handles.running)
@@ -927,24 +1082,24 @@ colormap(handles.figure1,gray);
 function handles=configure_analog_output_channels(handles)
 
 i=1;
-while i<=length(handles.analog.session.Channels)
-  if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.AnalogOutputVoltageChannel')
-    handles.analog.session.removeChannel(i);
+while i<=length(handles.session.Channels)
+  if strcmp(class(handles.session.Channels(i)),'daq.ni.AnalogOutputVoltageChannel')
+    handles.session.removeChannel(i);
   else
     i=i+1;
   end
 end
 
 if handles.analog.out.on && (handles.analog.out.n>0)
-  [~,idx]=handles.analog.session.addAnalogOutputChannel(handles.daqdevices.ID,0:(handles.analog.out.n-1),'voltage');
-  [handles.analog.session.Channels(idx).Range]=deal(handles.analog.out.ranges_available(handles.analog.out.range));
+  [~,idx]=handles.session.addAnalogOutputChannel(handles.daqdevices.ID,0:(handles.analog.out.n-1),'voltage');
+  [handles.analog.Channels(idx).Range]=deal(handles.analog.out.ranges_available(handles.analog.out.range));
 end
 
 if(length(handles.analog.out.play)~=handles.analog.out.n)
   handles.analog.out.play=zeros(1,handles.analog.out.n);
   handles.analog.out.file=cell(1,handles.analog.out.n);
-  handles.analog.out.fs=nan(1,handles.analog.out.n);
   handles.analog.out.y=cell(1,handles.analog.out.n);
+  handles.analog.out.fs=nan(1,handles.analog.out.n);
   handles.analog.out.idx=ones(1,handles.analog.out.n);
 end
 
@@ -953,31 +1108,57 @@ end
 function handles=configure_analog_input_channels(handles)
 
 i=1;
-while i<=length(handles.analog.session.Channels)
-  if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.AnalogInputVoltageChannel')
-    handles.analog.session.removeChannel(i);
+while i<=length(handles.session.Channels)
+  if strcmp(class(handles.session.Channels(i)),'daq.ni.AnalogInputVoltageChannel')
+    handles.session.removeChannel(i);
   else
     i=i+1;
   end
 end
 
 if(handles.analog.in.on) && (handles.analog.in.n>0)
-  [~,idx]=handles.analog.session.addAnalogInputChannel(handles.daqdevices.ID,0:(handles.analog.in.n-1),'voltage');
-  [handles.analog.session.Channels(idx).Range]=deal(handles.analog.in.ranges_available(handles.analog.in.range));
-  [handles.analog.session.Channels(idx).TerminalConfig]=...
+  [~,idx]=handles.session.addAnalogInputChannel(handles.daqdevices.ID,0:(handles.analog.in.n-1),'voltage');
+  [handles.session.Channels(idx).Range]=deal(handles.analog.in.ranges_available(handles.analog.in.range));
+  [handles.session.Channels(idx).TerminalConfig]=...
       deal(handles.analog.in.terminal_configurations_available{handles.analog.in.terminal_configuration});
+end
+
+
+% ---
+function handles=configure_digital_channels(handles)
+
+i=1;
+while i<=length(handles.session.Channels)
+  tmp=class(handles.session.Channels(i));
+  if(strcmp(tmp,'daq.ni.DigitalOutputChannel') || strcmp(tmp,'daq.ni.DigitalInputChannel'))
+    handles.session.removeChannel(i);
+  else
+    i=i+1;
+  end
+end
+
+if(handles.digital.out.on) && (handles.digital.out.n>0)
+  addDigitalChannel(handles.session, handles.daqdevices.ID,...
+      ['port0/line0:' num2str(handles.digital.out.n-1)],'OutputOnly');
+end
+
+if(handles.digital.in.on) && (handles.digital.in.n>0)
+  for(i=(handles.digital.in.maxn-1):-1:(handles.digital.in.maxn-handles.digital.in.n))
+    handles.session.addDigitalChannel(handles.daqdevices.ID,...
+        ['port0/line' num2str(i)], 'InputOnly');
+  end
 end
 
 
 % ---
 function handles=configure_video_channels(handles)
 
-if(~isfield(handles.analog,'session'))  return;  end
+if(~isfield(handles,'session'))  return;  end
 
 i=1;
-while i<=length(handles.analog.session.Channels)
-  if strcmp(class(handles.analog.session.Channels(i)),'daq.ni.CounterOutputPulseGenerationChannel')
-    handles.analog.session.removeChannel(i);
+while i<=length(handles.session.Channels)
+  if strcmp(class(handles.session.Channels(i)),'daq.ni.CounterOutputPulseGenerationChannel')
+    handles.session.removeChannel(i);
     break;
   else
     i=i+1;
@@ -985,7 +1166,7 @@ while i<=length(handles.analog.session.Channels)
 end
 
 if(handles.video.on && (handles.video.n>0) && handles.video.counter>1 && ~isnan(handles.video.FPS))
-  h=handles.analog.session.addCounterOutputChannel(...
+  h=handles.session.addCounterOutputChannel(...
       handles.daqdevices.ID,handles.video.counter-2,'PulseGeneration');
   set(h,'Frequency',handles.video.FPS);
 end
@@ -1087,42 +1268,86 @@ catch
 end
 
 if(isfield(handles,'daqdevices'))
-  handles.analogGui=analog('omnivore', handles.figure1);
-  analogHandles = guidata(handles.analogGui);
   
-  handles.analog.session=daq.createSession('ni');
+  idxAO=find(cellfun(@(x) strcmp(x,'AnalogOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
+  idxAI=find(cellfun(@(x) strcmp(x,'AnalogInput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
+  idxDIO=find(cellfun(@(x) strcmp(x,'DigitalIO'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
+  idxCO=find(cellfun(@(x) strcmp(x,'CounterOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
 
-  idx=find(cellfun(@(x) strcmp(x,'AnalogOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
-  handles.analog.out.ranges_available=handles.daqdevices.Subsystems(idx).RangesAvailable;
-  set(analogHandles.AnalogOutRange,'String', ...
-      arrayfun(@char,handles.analog.out.ranges_available,'uniformoutput',false));
-  handles.analog.out.range=min(handles.analog.out.range,length(handles.analog.out.ranges_available));
-  handles.analog.out.maxn=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
-  handles.analog.out.n=min(handles.analog.out.n,handles.analog.out.maxn);
-  handles.analog.out.curr=min(handles.analog.out.curr,handles.analog.out.maxn);
-  handles=configure_analog_output_channels(handles);
+  if((~isempty(idxAO)) || (~isempty(idxAI)) || (~isempty(idxDIO)) || (~isempty(idxCO)))
+    handles.session=daq.createSession('ni');
+  end
+  if(isempty(idxAO) && isempty(idxAI) && isempty(idxDIO))
+    set(handles.SamplingRate,'visible','off');
+    set(handles.SamplingRateLabel,'visible','off');
+  end
+  
+  if((~isempty(idxAO)) || (~isempty(idxAI)))
+    handles.analogGui=analog('omnivore', handles.figure1);
+    analogHandles = guidata(handles.analogGui);
+  end
+    
+  if(~isempty(idxAO))
+    handles.analog.out.ranges_available=handles.daqdevices.Subsystems(idxAO).RangesAvailable;
+    set(analogHandles.AnalogOutRange,'String', ...
+        arrayfun(@char,handles.analog.out.ranges_available,'uniformoutput',false));
+    handles.analog.out.range=min(handles.analog.out.range,length(handles.analog.out.ranges_available));
+    handles.analog.out.maxn=handles.daqdevices.Subsystems(idxAO).NumberOfChannelsAvailable;
+    handles.analog.out.n=min(handles.analog.out.n,handles.analog.out.maxn);
+    handles.analog.out.curr=min(handles.analog.out.curr,handles.analog.out.maxn);
+    handles=configure_analog_output_channels(handles);
+  else
+    handles.analog.out.maxn=0;
+    handles.analog.out.n=0;
+  end
 
-  idx=find(cellfun(@(x) strcmp(x,'AnalogInput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
-  tmp=handles.daqdevices.Subsystems(idx).TerminalConfigsAvailable;
-  if(~iscell(tmp)) tmp={tmp};  end
-  handles.analog.in.terminal_configurations_available=tmp;
-  set(analogHandles.AnalogInTerminalConfiguration,'String', ...
-      handles.analog.in.terminal_configurations_available);
-  handles.analog.in.terminal_configuration=...
-      min(handles.analog.in.terminal_configuration,length(handles.analog.in.terminal_configurations_available));
-  handles.analog.in.ranges_available=handles.daqdevices.Subsystems(idx).RangesAvailable;
-  set(analogHandles.AnalogInRange,'String', ...
-      arrayfun(@char,handles.analog.in.ranges_available,'uniformoutput',false));
-  handles.analog.in.range=min(handles.analog.in.range,length(handles.analog.in.ranges_available));
-  handles.analog.in.maxn=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
-  handles.analog.in.n=min(handles.analog.in.n,handles.analog.in.maxn);
-  handles.analog.in.curr=min(handles.analog.in.curr,handles.analog.in.maxn);
-  handles=configure_analog_input_channels(handles);
+  if(~isempty(idxAI))
+    tmp=handles.daqdevices.Subsystems(idxAI).TerminalConfigsAvailable;
+    if(~iscell(tmp)) tmp={tmp};  end
+    handles.analog.in.terminal_configurations_available=tmp;
+    set(analogHandles.AnalogInTerminalConfiguration,'String', ...
+        handles.analog.in.terminal_configurations_available);
+    handles.analog.in.terminal_configuration=...
+        min(handles.analog.in.terminal_configuration,length(handles.analog.in.terminal_configurations_available));
+    handles.analog.in.ranges_available=handles.daqdevices.Subsystems(idxAI).RangesAvailable;
+    set(analogHandles.AnalogInRange,'String', ...
+        arrayfun(@char,handles.analog.in.ranges_available,'uniformoutput',false));
+    handles.analog.in.range=min(handles.analog.in.range,length(handles.analog.in.ranges_available));
+    handles.analog.in.maxn=handles.daqdevices.Subsystems(idxAI).NumberOfChannelsAvailable;
+    handles.analog.in.n=min(handles.analog.in.n,handles.analog.in.maxn);
+    handles.analog.in.curr=min(handles.analog.in.curr,handles.analog.in.maxn);
+    handles=configure_analog_input_channels(handles);
+  else
+    handles.analog.in.maxn=0;
+    handles.analog.in.n=0;
+  end
 
-  idx=find(cellfun(@(x) strcmp(x,'CounterOutput'),{handles.daqdevices.Subsystems.SubsystemType}),1,'first');
+  if(~isempty(idxDIO))
+    handles.digitalGui=digital('omnivore', handles.figure1);
+    digitalHandles = guidata(handles.digitalGui);
+    
+    tmp=sum(cellfun(@(x) strncmp(x,'port0',5), handles.daqdevices.Subsystems(idxDIO).ChannelNames));
+    handles.digital.out.maxn=tmp;
+    handles.digital.in.maxn=tmp;
+    handles.digital.out.n=min(handles.digital.out.n, handles.digital.out.maxn);
+    if(handles.digital.in.on)
+      handles.digital.out.n=min(handles.digital.out.n, handles.digital.out.maxn-handles.digital.in.n);
+    end
+    handles.digital.in.n=min(handles.digital.in.n, handles.digital.in.maxn);
+    if(handles.digital.out.on)
+      handles.digital.in.n=min(handles.digital.in.n, handles.digital.in.maxn-handles.digital.out.n);
+    end
+    handles=configure_digital_channels(handles);
+  else
+    handles.digital.out.maxn=0;
+    handles.digital.out.n=0;
+    handles.digital.in.maxn=0;
+    handles.digital.in.n=0;
+  end
+
   handles.video.ncounters=0;
-  if(~isempty(idx))
-      handles.video.ncounters=handles.daqdevices.Subsystems(idx).NumberOfChannelsAvailable;
+  if(~isempty(idxCO))
+      handles.video.ncounters=handles.daqdevices.Subsystems(idxCO).NumberOfChannelsAvailable;
   end
 end
 
@@ -1174,6 +1399,9 @@ if(isfield(handles,'videoadaptors'))
     end
     
     handles=configure_video_channels(handles);
+  else
+    handles.video.maxn=0;
+    handles.video.n=0;
   end
 end
 
@@ -1204,9 +1432,7 @@ end
 
 
 % --- 
-function analog_plot(haxis, data, hanalog)
-
-fs=nanmax(hanalog.fs);
+function analog_plot(haxis, data, hanalog, fs)
 
 switch hanalog.style
   case 1
@@ -1279,68 +1505,135 @@ end
 
 
 % --- 
-function analog_out_callback(src,evt,hObject)
+function digital_plot(haxis, data, hdigital, fs)
+
+switch hdigital.style
+  case 1
+    plot(haxis,(1:size(data,1))./fs,bsxfun(@plus,0.9.*data,0:(size(data,2)-1)),'k-');
+    axis(haxis,'tight');
+    v=axis(haxis);
+    axis(haxis,[v(1) v(2) 0 size(data,2)]);
+    xlabel(haxis,'time (sec)');
+  case 2
+    plot(haxis,(1:size(data,1))./fs,bin2dec(num2str(data)),'k-');
+    axis(haxis,'tight');
+    if(~hdigital.autoscale)
+      v=axis(haxis);
+      axis(haxis,[v(1) v(2) 0 2^size(data,2)]);
+    end
+    xlabel(haxis,'time (sec)');
+  case 3
+    bar(haxis,1:hdigital.n,mean(data),'k');
+    axis(haxis,'tight');
+    v=axis(haxis);
+    axis(haxis,[v(1) v(2) 0 1]);
+    xlabel(haxis,'channel #');
+end
+
+
+% ---
+function out_callback(src,evt,hObject)
 
 handles=guidata(hObject);
 
 if handles.verbose>0
-  disp('entering analog_out_callback');
+  disp('entering out_callback');
   tic
 end
 
-out=zeros(max(1024,max(round(handles.analog.session.Rate))),handles.analog.out.n); 
-for i=1:handles.analog.out.n
-  if(handles.analog.out.play(i))
-    tmp=handles.analog.out.idx(i)+round(handles.analog.session.Rate)-1;
-    idx=min(tmp,length(handles.analog.out.y{i}));
-    idx2=tmp-idx;
-    out(:,i)=[handles.analog.out.y{i}(handles.analog.out.idx(i):idx); handles.analog.out.y{i}(1:idx2)];
-    handles.analog.out.idx(i)=idx2+1;
-    if(idx2==0)
-      handles.analog.out.idx(i)=idx+1;
+chan=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogOutputVoltageChannel') || ...
+    strcmp(class(x),'daq.ni.DigitalOutputChannel'), evt.Source.Channels);
+out=zeros(round(handles.session.Rate),sum(chan)); 
+
+if(isfield(handles,'analogGui') && handles.analog.out.on)
+  chan2=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogOutputVoltageChannel'), evt.Source.Channels);
+  chan2=chan2(chan);
+  1:length(chan2);
+  chan2=ans(chan2);
+
+  for i=1:handles.analog.out.n
+    if(handles.analog.out.play(i))
+      tmp=handles.analog.out.idx(i)+round(handles.session.Rate)-1;
+      idx=min(tmp,length(handles.analog.out.y{i}));
+      idx2=tmp-idx;
+      out(:,chan2(i))=[handles.analog.out.y{i}(handles.analog.out.idx(i):idx); handles.analog.out.y{i}(1:idx2)];
+      handles.analog.out.idx(i)=idx2+1;
+      if(idx2==0)
+        handles.analog.out.idx(i)=idx+1;
+      end
     end
   end
+  
+  analogHandles = guidata(handles.analogGui);
+  analog_plot(analogHandles.AnalogOutPlot, out(:,chan2), handles.analog.out, handles.samplingrate);
 end
 
-analogHandles = guidata(handles.analogGui);
-analog_plot(analogHandles.AnalogOutPlot, out, handles.analog.out);
+if(isfield(handles,'digitalGui') && handles.digital.out.on)
+  chan2=arrayfun(@(x) strcmp(class(x),'daq.ni.DigitalOutputChannel'), evt.Source.Channels);
+  chan2=chan2(chan);
+  1:length(chan2);
+  chan2=ans(chan2);
 
-handles.analog.session.queueOutputData(out);
+  if(handles.digital.out.play)
+    tmp=handles.digital.out.idx+round(handles.session.Rate)-1;
+    idx=min(tmp,length(handles.digital.out.y));
+    idx2=tmp-idx;
+    tmp=dec2bin([handles.digital.out.y(handles.digital.out.idx:idx); handles.digital.out.y(1:idx2)], ...
+        handles.digital.out.n);
+    for i=1:handles.digital.out.n
+      out(:,chan2(i))=str2num(tmp(:,i));
+    end
+    handles.digital.out.idx=idx2+1;
+    if(idx2==0)
+      handles.digital.out.idx=idx+1;
+    end
+  end
+  
+  digitalHandles = guidata(handles.digitalGui);
+  digital_plot(digitalHandles.DigitalOutPlot, out(:,chan2), handles.digital.out, handles.samplingrate);
+end
+
+handles.session.queueOutputData(out);
 
 guidata(hObject, handles);
 
 if handles.verbose>0
-  disp(['exiting  analog_out_callback: ' ...
-        num2str(toc/(length(out)/handles.analog.out.fs(1)),3) 'x real time is ' ...
+  disp(['exiting  out_callback: ' ...
+        num2str(toc/(length(out)/handles.samplingrate(1)),3) 'x real time is ' ...
         num2str(toc,3) 's to process ' ...
-        num2str(length(out)/handles.analog.out.fs(1),3) 's of data']);
+        num2str(length(out)/handles.samplingrate(1),3) 's of data']);
 end
 
 
 % --- 
-function analog_in_callback(src,evt,hObject)
+function in_callback(src,evt,hObject)
 
 persistent last_timestamp
 
 handles=guidata(hObject);
 
 if handles.verbose>0
-  disp('entering analog_in_callback');
+  disp('entering in_callback');
   tic
 end
 
-if(handles.analog.in.record)
+if(isfield(handles,'analogGui') && handles.analog.in.on)
+  analogHandles = guidata(handles.analogGui);
+  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogInputVoltageChannel'), evt.Source.Channels);
+  analog_plot(analogHandles.AnalogInPlot, evt.Data(:,idx), handles.analog.in, handles.samplingrate);
+
+  if(handles.analog.in.record)
     switch(handles.analog.in.fileformat)
       case 1
-        fwrite(handles.analog.in.fid,evt.Data','float64');
+        fwrite(handles.analog.in.fid,evt.Data(:,idx)','float64');
       case 2
-        fwrite(handles.analog.in.fid,evt.Data','float32');
+        fwrite(handles.analog.in.fid,evt.Data(:,idx)','float32');
       case 3
-        d=bsxfun(@minus,evt.Data,handles.analog.in.offset);
+        d=bsxfun(@minus,evt.Data(:,idx),handles.analog.in.offset);
         d=bsxfun(@rdivide,d,handles.analog.in.step);
         fwrite(handles.analog.in.fid,d','int16');
       case 4
-        data_length = numel(evt.Data) * 4;
+        data_length = numel(evt.Data(:,idx)) * 4;
 
         fseek(handles.analog.in.fid,4,'bof');
         chunk_size = fread(handles.analog.in.fid, 1, 'uint32', 0, 'ieee-le');
@@ -1354,30 +1647,61 @@ if(handles.analog.in.record)
 
         fseek(handles.analog.in.fid,0,'eof');
         fwrite(handles.analog.in.fid, ...
-            evt.Data ./ handles.analog.in.ranges_available(handles.analog.in.range).Max, ...
+            evt.Data(:,idx) ./ handles.analog.in.ranges_available(handles.analog.in.range).Max, ...
             'single', 0, 'ieee-le');
     end
+  end
+end
+
+if(isfield(handles,'digitalGui') && handles.digital.in.on)
+  digitalHandles = guidata(handles.digitalGui);
+  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.DigitalInputChannel'), evt.Source.Channels);
+  digital_plot(digitalHandles.DigitalInPlot, evt.Data(:,idx), handles.digital.in, handles.samplingrate);
+
+  if(handles.digital.in.record)
+    data_length = numel(evt.Data(:,idx)) * 4;
+
+    fseek(handles.digital.in.fid,4,'bof');
+    chunk_size = fread(handles.digital.in.fid, 1, 'uint32');
+    fseek(handles.digital.in.fid,4,'bof');
+    fwrite(handles.digital.in.fid,chunk_size + data_length,'uint32'); 
+
+    fseek(handles.digital.in.fid,42,'bof');
+    subchunk_size = fread(handles.digital.in.fid, 1, 'uint32');
+    fseek(handles.digital.in.fid,42,'bof');
+    fwrite(handles.digital.in.fid,subchunk_size + data_length, 'uint32');
+
+    tmp2=bin2dec(num2str(evt.Data(:,idx)));
+    if(handles.digital.in.n<=8)
+      tmp='uint8';
+    elseif(handles.digital.in.n<=16)
+      tmp='int16';
+      tmp2=tmp2-INTMAX(tmp)/2;
+    else
+      tmp='int32';
+      tmp2=tmp2-INTMAX(tmp)/2;
+    end
+    fseek(handles.digital.in.fid,0,'eof');
+    fwrite(handles.digital.in.fid, tmp2, tmp);
+  end
 end
 
 if(~isempty(last_timestamp))
-  tmp=round((evt.TimeStamps(1)-last_timestamp)*handles.analog.in.fs);
+  tmp=round((evt.TimeStamps(1)-last_timestamp)*handles.samplingrate);
   if(tmp~=1)
     disp(['warning:  skipped ' num2str(tmp) ' analog input samples']);
   end
 end
 last_timestamp=evt.TimeStamps(end);
 
-analogHandles = guidata(handles.analogGui);
-analog_plot(analogHandles.AnalogInPlot, evt.Data, handles.analog.in);
-
 %axis(handles.AnalogInPlot,'tight');
 %axis(handles.AnalogInPlot,'off');
 
 if handles.verbose>0
-  disp(['exiting  analog_in_callback:  ' ...
-        num2str(toc/(length(evt.Data)/handles.analog.in.fs),3) 'x real time is ' ...
+  disp(['exiting  in_callback:  ' ...
+        num2str(toc/(length(evt.Data)/handles.samplingrate),3) 'x real time is ' ...
         num2str(toc,3) 's to process ' ...
-        num2str(length(evt.Data)/handles.analog.in.fs,3) 's of data']);
+        num2str(length(evt.Data)/handles.samplingrate,3) 's of data']);
 end
 
 
@@ -1496,9 +1820,9 @@ if(isfield(handles,'triggertime'))
   set(handles.TimeElapsed,'string',str);
 end
 
-analogHandles = guidata(handles.analogGui);
-if(handles.analog.out.on)
-  set(analogHandles.AnalogOutBuffer,'string',num2str(handles.analog.session.ScansQueued));
+if(isfield(handles,'analogGui') && handles.analog.out.on)
+  analogHandles = guidata(handles.analogGui);
+  set(analogHandles.AnalogOutBuffer,'string',num2str(handles.session.ScansQueued));
 end
 
 if handles.video.on && handles.video.save(handles.video.curr)
@@ -1542,4 +1866,31 @@ try
       'stoppreview(vi);  set(fig,''visible'',''off'');');
 catch
   warning(['trouble taking down video preview of channel ' num2str(handles.video.curr)]);
+end
+
+
+
+function SamplingRate_Callback(hObject, eventdata, handles)
+% hObject    handle to SamplingRate (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SamplingRate as text
+%        str2double(get(hObject,'String')) returns contents of SamplingRate as a double
+
+tmp=str2num(get(hObject,'String'));
+handles.samplingrate=tmp;
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function SamplingRate_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SamplingRate (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end
