@@ -299,8 +299,10 @@ if(~handles.running)
   handles.running=1;
   handles.triggertime=clock;
 
+  handles.counter.timers={};
   for(i=1:handles.counter.n)
     tmp=cumsum(handles.counter.timing{i});
+    handles.counter.timers{i}={};
     for(j=1:floor(length(tmp)/2))
       tmp2 = 'singleShot';
       if(handles.counter.repeat(i))
@@ -599,10 +601,14 @@ if(handles.running)
   if(strcmp('no',questdlg('a recording is in progress.  force quit?','','yes','no','no')))
     return;
   end
-end
-tmp=timerfind;
-if(~isempty(tmp))
-  stop(tmp);  delete(tmp);
+  for(i=1:length(handles.counter.timers))
+    for(j=1:floor(length(handles.counter.timers{i})))
+      if(isvalid(handles.counter.timers{i}{j}))
+        stop(handles.counter.timers{i}{j});
+        delete(handles.counter.timers{i}{j});
+      end
+    end
+  end
 end
 save_config_file(handles,handles.rcfilename);
 delete(hObject);
