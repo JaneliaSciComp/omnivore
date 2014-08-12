@@ -22,7 +22,7 @@ function varargout = omnivore(varargin)
 
 % Edit the above text to modify the response to help omnivore
 
-% Last Modified by GUIDE v2.5 31-Jul-2014 16:27:22
+% Last Modified by GUIDE v2.5 12-Aug-2014 16:11:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -595,6 +595,7 @@ handles.filename='';
 handles.timelimit=0;
 handles.verbose=0;
 handles.samplingrate=nan;
+handles.daq=1;
 
 
 % ---
@@ -680,6 +681,7 @@ handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
 handles.samplingrate=handles_saved.samplingrate;
+handles.daq=handles_saved.daq;
         
         
 % ---
@@ -1013,6 +1015,7 @@ set(handles.Verbose,'enable','off','value',handles.verbose+1);
 if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
   set(handles.SamplingRate,'enable','off');
 end
+set(handles.DAQ,'enable','off','value',handles.daq);
 
 if(~handles.running)
   if(isfield(handles,'analogGui'))
@@ -1040,6 +1043,7 @@ if(~handles.running)
   end
   set(handles.TimeLimit,'enable','on');
   set(handles.Verbose,'enable','on');
+  set(handles.DAQ,'enable','on');
 end
 
 tmp=[];  tmp2={};
@@ -1257,8 +1261,9 @@ try
   % next two lines only needed for roian's rig, and prohibit using chr & hyg simultaneously
   % daq.reset;
   % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
-  daq.getDevices;
-  handles.daqdevices=ans(1);
+  tmp=daq.getDevices;
+  set(handles.DAQ,'string',{tmp.ID});
+  handles.daqdevices=tmp(handles.daq);
 catch
   uiwait(warndlg('no digitizer found'));
 end
@@ -1301,6 +1306,7 @@ if(isfield(handles,'daqdevices'))
   else
     handles.analog.out.maxn=0;
     handles.analog.out.n=0;
+    handles.analog.out.on=0;
   end
 
   if(~isempty(idxAI))
@@ -1322,6 +1328,7 @@ if(isfield(handles,'daqdevices'))
   else
     handles.analog.in.maxn=0;
     handles.analog.in.n=0;
+    handles.analog.in.on=0;
   end
 
   if(~isempty(idxDIO))
@@ -1405,6 +1412,7 @@ if(isfield(handles,'videoadaptors'))
   else
     handles.video.maxn=0;
     handles.video.n=0;
+    handles.video.on=0;
   end
 end
 
@@ -1893,6 +1901,47 @@ function SamplingRate_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in DAQ.
+function DAQ_Callback(hObject, eventdata, handles)
+% hObject    handle to DAQ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns DAQ contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from DAQ
+
+handles.daq=get(hObject,'value');
+
+if(isfield(handles,'analogGui'))
+  delete(handles.analogGui);
+end
+if(isfield(handles,'digitalGui'))
+  delete(handles.digitalGui);
+end
+if(isfield(handles,'videoGui'))
+  delete(handles.videoGui);
+end
+delete(handles.session);
+
+handles=query_hardware(handles);
+update_figure(handles);
+
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function DAQ_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to DAQ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
