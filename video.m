@@ -55,6 +55,8 @@ function video_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for video
 handles.output = hObject;
 
+handles.omnivore = varargin{find(strcmp(varargin, 'omnivore'))+1};
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -269,10 +271,10 @@ function VideoFormat_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoFormat
 
 omnivoreHandles = guidata(handles.omnivore);
-i=handles.video.curr;
+i=omnivoreHandles.video.curr;
 omnivoreHandles.video.formatvalue(i)=get(handles.VideoFormat,'value');
 %handles.video.params{handles.video.curr}=[];
-omnivoreHandles.video.params{i}=get_video_params(...
+omnivoreHandles.video.params{i}=omnivoreHandles.get_video_params(...
   omnivoreHandles.video.adaptor(i),...
   omnivoreHandles.video.deviceid(i),...
   omnivoreHandles.video.formatlist{i}{omnivoreHandles.video.formatvalue(i)});

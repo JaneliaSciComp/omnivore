@@ -1,4 +1,4 @@
-function av_video_callback(evt,src,vi,FPS,fid,verbose,current,timestamps)
+function video_callback(evt,src,vi,FPS,fid,verbose,current,timestamps)
 
 persistent time0 skipped0
 
