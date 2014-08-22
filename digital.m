@@ -22,7 +22,7 @@ function varargout = digital(varargin)
 
 % Edit the above text to modify the response to help digital
 
-% Last Modified by GUIDE v2.5 06-Aug-2014 11:18:21
+% Last Modified by GUIDE v2.5 22-Aug-2014 15:21:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -282,7 +282,7 @@ omnivoreHandles = guidata(handles.omnivore);
 tmp=str2num(get(hObject,'String'));
 tmp2=min([tmp omnivoreHandles.digital.out.maxn]);
 if(omnivoreHandles.digital.in.on)
-  tmp2=min([omnivoreHandles.digital.out.maxn-omnivoreHandles.digital.in.n]);
+  tmp2=min([tmp2 omnivoreHandles.digital.out.maxn-omnivoreHandles.digital.in.n]);
 end
 if(tmp2~=tmp)
   tmp=tmp2;
@@ -357,3 +357,18 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 %delete(hObject);
+
+
+% --- Executes on button press in DigitalInDirection.
+function DigitalDirection_Callback(hObject, eventdata, handles)
+% hObject    handle to DigitalInDirection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of DigitalInDirection
+
+omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.digital.direction=~omnivoreHandles.digital.direction;
+omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles);
+guidata(handles.omnivore,omnivoreHandles);

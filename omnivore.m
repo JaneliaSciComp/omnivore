@@ -563,6 +563,7 @@ handles.digital.in.record=0;
 handles.digital.in.directory='';
 handles.digital.in.style=1;
 handles.digital.in.autoscale=0;
+handles.digital.direction=0;
 handles.video.on=0;
 handles.video.syncpulseonly=0;
 handles.video.maxn=nan;
@@ -653,6 +654,7 @@ handles.digital.in.record=handles_saved.digital.in.record;
 handles.digital.in.directory=handles_saved.digital.in.directory;
 handles.digital.in.style=handles_saved.digital.in.style;
 handles.digital.in.autoscale=handles_saved.digital.in.autoscale;
+handles.digital.direction=handles_saved.digital.direction;
 handles.video.on=handles_saved.video.on;
 handles.video.syncpulseonly=handles_saved.video.syncpulseonly;
 handles.video.maxn=handles_saved.video.maxn;
@@ -856,11 +858,17 @@ if(isfield(handles,'digitalGui'))
   digitalHandles = guidata(handles.digitalGui);
   set(digitalHandles.DigitalOutPlay,'enable','off');
   set(digitalHandles.DigitalOutNumChannels,'enable','off');
+  set(digitalHandles.DigitalOutDirection,'enable','off');
   set(digitalHandles.DigitalOutAutoScale,'enable','off');
   set(digitalHandles.DigitalOutFile,'enable','off');
   set(digitalHandles.DigitalOutStyle,'enable','off');
   if(handles.digital.out.on && (handles.digital.out.maxn>0))
     set(digitalHandles.DigitalOutNumChannels,'string',handles.digital.out.n);
+    if(handles.digital.direction)
+      set(digitalHandles.DigitalOutDirection,'string','Up from 0');
+    else
+      set(digitalHandles.DigitalOutDirection,'string',['Down from ' num2str(handles.digital.out.maxn)]);
+    end
     set(digitalHandles.DigitalOutAutoScale,'value',handles.digital.out.autoscale);
     set(digitalHandles.DigitalOutFile,'string',handles.digital.out.file);
     if(handles.digital.out.play)
@@ -874,6 +882,7 @@ if(isfield(handles,'digitalGui'))
     if(~handles.running)
       set(digitalHandles.DigitalOutPlay,'enable','on');
       set(digitalHandles.DigitalOutNumChannels,'enable','on');
+      set(digitalHandles.DigitalOutDirection,'enable','on');
     end
     set(digitalHandles.DigitalOutFile,'enable','on');
     set(digitalHandles.DigitalOutStyle,'enable','on');
@@ -884,11 +893,17 @@ if(isfield(handles,'digitalGui'))
 
   set(digitalHandles.DigitalInRecord,'enable','off');
   set(digitalHandles.DigitalInNumChannels,'enable','off');
+  set(digitalHandles.DigitalInDirection,'enable','off');
   set(digitalHandles.DigitalInAutoScale,'enable','off');
   set(digitalHandles.DigitalInDirectory,'enable','off');
   set(digitalHandles.DigitalInStyle,'enable','off');
   if(handles.digital.in.on && (handles.digital.in.maxn>0))
     set(digitalHandles.DigitalInNumChannels,'string',handles.digital.in.n);
+    if(handles.digital.direction)
+      set(digitalHandles.DigitalInDirection,'string',['Down from ' num2str(handles.digital.in.maxn)]);
+    else
+      set(digitalHandles.DigitalInDirection,'string','Up from 0');
+    end
     set(digitalHandles.DigitalInDirectory,'string',handles.digital.in.directory);
     set(digitalHandles.DigitalInAutoScale,'value',handles.digital.in.autoscale);
     if(handles.digital.in.record)
@@ -902,6 +917,7 @@ if(isfield(handles,'digitalGui'))
     if(~handles.running)
       set(digitalHandles.DigitalInRecord,'enable','on');
       set(digitalHandles.DigitalInNumChannels,'enable','on');
+      set(digitalHandles.DigitalInDirection,'enable','on');
     end
     set(digitalHandles.DigitalInDirectory,'enable','on');
     set(digitalHandles.DigitalInStyle,'enable','on');
@@ -1062,6 +1078,7 @@ if(isfield(handles,'digitalGui') && handles.digital.out.on && (handles.digital.o
   tmp=[tmp handles.digital.out.fs];
   tmp2{end+1}=['digital = ' num2str(handles.digital.out.fs)];
 end
+tmp=tmp(~isnan(tmp));
 handles.samplingrate=median(tmp);
 if(length(unique(tmp))>1)
   tmp2={'not all sampling rates are the same:' tmp2{:}};
@@ -1144,12 +1161,24 @@ while i<=length(handles.session.Channels)
 end
 
 if(handles.digital.out.on) && (handles.digital.out.n>0)
-  addDigitalChannel(handles.session, handles.daqdevices.ID,...
-      ['port0/line0:' num2str(handles.digital.out.n-1)],'OutputOnly');
+  if(handles.digital.direction)
+    start=0; incr=1; stop=handles.digital.out.n-1;
+  else
+    start=handles.digital.out.maxn-1; incr=-1; stop=handles.digital.out.maxn-handles.digital.out.n;
+  end
+  for(i=start:incr:stop)
+    handles.session.addDigitalChannel(handles.daqdevices.ID,...
+        ['port0/line' num2str(i)], 'InputOnly');
+  end
 end
 
 if(handles.digital.in.on) && (handles.digital.in.n>0)
-  for(i=(handles.digital.in.maxn-1):-1:(handles.digital.in.maxn-handles.digital.in.n))
+  if(handles.digital.direction)
+    start=handles.digital.in.maxn-1; incr=-1; stop=handles.digital.in.maxn-handles.digital.in.n;
+  else
+    start=0; incr=1; stop=handles.digital.in.n-1;
+  end
+  for(i=start:incr:stop)
     handles.session.addDigitalChannel(handles.daqdevices.ID,...
         ['port0/line' num2str(i)], 'InputOnly');
   end
@@ -1445,6 +1474,8 @@ end
 % --- 
 function analog_plot(haxis, data, hanalog, fs)
 
+if(isempty(data)) return;  end
+
 switch hanalog.style
   case 1
     plot(haxis,(1:size(data,1))./fs,data(:,hanalog.curr),'k-');
@@ -1518,6 +1549,8 @@ end
 % --- 
 function digital_plot(haxis, data, hdigital, fs)
 
+if(isempty(data)) return;  end
+
 switch hdigital.style
   case 1
     plot(haxis,(1:size(data,1))./fs,bsxfun(@plus,0.9.*data,0:(size(data,2)-1)),'k-');
@@ -1526,7 +1559,7 @@ switch hdigital.style
     axis(haxis,[v(1) v(2) 0 size(data,2)]);
     xlabel(haxis,'time (sec)');
   case 2
-    plot(haxis,(1:size(data,1))./fs,bin2dec(num2str(data)),'k-');
+    plot(haxis,(1:size(data,1))./fs,bin2dec(num2str(fliplr(data))),'k-');
     axis(haxis,'tight');
     if(~hdigital.autoscale)
       v=axis(haxis);
