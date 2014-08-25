@@ -272,7 +272,7 @@ end
 
 handles.counter.session(i).Channels.Frequency=handles.counter.frequency(i);
 handles.counter.session(i).DurationInSeconds=handles.counter.timing{i}(2*j)*60;
-handles.counter.session(i).Channels.DutyCycle=handles.counter.intensity(i);
+handles.counter.session(i).Channels.DutyCycle=handles.counter.intensity(i)/100;
 handles.counter.session(i).startBackground;
 
 drawnow('expose');
@@ -296,6 +296,24 @@ end
 set(handles.StartStop,'enable','off');  drawnow;
 
 if(~handles.running)
+  if(any(isnan(handles.counter.frequency)))
+    uiwait(errordlg('frequency must be a positive integer'));
+    set(handles.StartStop,'enable','on');  drawnow('expose');
+    return;
+  end
+  if(any(isnan(handles.counter.intensity)))
+    uiwait(errordlg('intensity must be between 0 and 100'));
+    set(handles.StartStop,'enable','on');  drawnow('expose');
+    return;
+  end
+  for(i=1:handles.counter.n)
+    if(any(isnan(handles.counter.timing{i})))
+      uiwait(errordlg('timing must non be NaN'));
+      set(handles.StartStop,'enable','on');  drawnow('expose');
+      return;
+    end
+  end
+  
   handles.running=1;
   handles.triggertime=clock;
 
@@ -512,7 +530,10 @@ function CounterFrequency_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of CounterFrequency as text
 %        str2double(get(hObject,'String')) returns contents of CounterFrequency as a double
-handles.counter.frequency(handles.counter.curr)=str2num(get(hObject,'string'));
+str2num(get(hObject,'string'));
+tmp=max(0,ans);
+handles.counter.frequency(handles.counter.curr)=tmp;
+set(hObject,'string',tmp);
 guidata(hObject,handles);
 
 
@@ -536,7 +557,10 @@ function CounterIntensity_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of CounterIntensity as text
 %        str2double(get(hObject,'String')) returns contents of CounterIntensity as a double
-handles.counter.intensity(handles.counter.curr)=str2num(get(hObject,'string'));
+str2num(get(hObject,'string'));
+tmp=max(0,min(100,ans));
+handles.counter.intensity(handles.counter.curr)=tmp;
+set(hObject,'string',tmp);
 guidata(hObject,handles);
 
 
