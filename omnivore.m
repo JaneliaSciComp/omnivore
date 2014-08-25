@@ -69,6 +69,7 @@ handles.configure_analog_output_channels = @configure_analog_output_channels;
 handles.configure_digital_channels = @configure_digital_channels;
 handles.configure_video_channels = @configure_video_channels;
 handles.get_video_params = @get_video_params;
+handles.set_video_param = @set_video_param;
 handles.update_figure = @update_figure;
 handles.video_setup_preview = @video_setup_preview;
 handles.video_takedown_preview = @video_takedown_preview;
@@ -1179,11 +1180,11 @@ end
  
 
 % ---
-function set_video_param(obj,event,handles)
+function set_video_param(videoObj, event, videoHandles, handles)
 
-data=get(handles.VideoParams,'data');
+data=get(videoHandles.VideoParams,'data');
 handles.video.params{handles.video.curr}=data;
-guidata(obj, handles);
+guidata(videoHandles.omnivore, handles);
 
 row=event.Indices(1);
 

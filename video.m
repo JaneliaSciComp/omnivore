@@ -22,7 +22,7 @@ function varargout = video(varargin)
 
 % Edit the above text to modify the response to help video
 
-% Last Modified by GUIDE v2.5 30-Jul-2014 11:13:12
+% Last Modified by GUIDE v2.5 22-Aug-2014 10:22:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -548,3 +548,18 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 % delete(hObject);
+
+
+% --- Executes when entered data in editable cell(s) in VideoParams.
+function VideoParams_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to VideoParams (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) edited
+%	PreviousData: previous data for the cell(s) edited
+%	EditData: string(s) entered by the user
+%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
+%	Error: error string when failed to convert EditData to appropriate value for Data
+% handles    structure with handles and user data (see GUIDATA)
+
+omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.set_video_param(hObject, eventdata, handles, omnivoreHandles);
