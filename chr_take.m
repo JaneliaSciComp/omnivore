@@ -22,7 +22,7 @@ function varargout = chr_take(varargin)
 
 % Edit the above text to modify the response to help chr_take
 
-% Last Modified by GUIDE v2.5 29-Jul-2014 13:56:36
+% Last Modified by GUIDE v2.5 28-Aug-2014 14:54:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,6 +58,7 @@ handles.counter.repeat=[];
 handles.running=0;
 handles.timelimit=0;
 handles.verbose=0;
+handles.daq=1;
 
 
 % ---
@@ -76,6 +77,7 @@ handles.counter.repeat=handles_saved.counter.repeat;
 handles.running=0;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
+handles.daq=handles_saved.daq;
 
 
 % ---
@@ -105,9 +107,11 @@ end
 
 set(handles.TimeLimit,'enable','off','string',num2str(handles.timelimit));
 set(handles.VerboseLevel,'enable','off','value',handles.verbose+1);
+set(handles.DAQ,'enable','off','value',handles.daq);
 if(~handles.running)
   set(handles.TimeLimit,'enable','on');
   set(handles.VerboseLevel,'enable','on');
+  set(handles.DAQ,'enable','on');
 end
 
 set(handles.StartStop,'enable','on');
@@ -134,8 +138,9 @@ try
   % next two lines only needed for roian's rig, and prohibit using chr & hyg simultaneously
   % daq.reset;
   % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
-  daq.getDevices;
-  handles.daqdevices=ans(1);
+  tmp=daq.getDevices;
+  set(handles.DAQ,'string',{tmp.ID});
+  handles.daqdevices=tmp(handles.daq);
 catch
   uiwait(warndlg('no digitizer found'));
 end
@@ -296,12 +301,12 @@ end
 set(handles.StartStop,'enable','off');  drawnow;
 
 if(~handles.running)
-  if(any(isnan(handles.counter.frequency)))
+  if(any(isnan(handles.counter.frequency(1:handles.counter.n))))
     uiwait(errordlg('frequency must be a positive integer'));
     set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
   end
-  if(any(isnan(handles.counter.intensity)))
+  if(any(isnan(handles.counter.intensity(1:handles.counter.n))))
     uiwait(errordlg('intensity must be between 0 and 100'));
     set(handles.StartStop,'enable','on');  drawnow('expose');
     return;
@@ -636,3 +641,37 @@ if(handles.running)
 end
 save_config_file(handles,handles.rcfilename);
 delete(hObject);
+
+
+% --- Executes on selection change in DAQ.
+function DAQ_Callback(hObject, eventdata, handles)
+% hObject    handle to DAQ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns DAQ contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from DAQ
+
+handles.daq=get(hObject,'value');
+
+for(i=1:handles.counter.maxn)
+  delete(handles.counter.session(i));
+end
+
+handles=query_hardware(handles);
+update_figure(handles);
+
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function DAQ_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to DAQ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
