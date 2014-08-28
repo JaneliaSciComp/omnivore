@@ -58,6 +58,7 @@ if(exist(handles.rcfilename)==2)
 else
   handles=initialize(handles);
 end
+update_figure(handles,false);
 
 [s,handles.git]=system('"c:\\Program Files (x86)\Git\bin\git" log -1 --pretty=format:"%ci %H"');
 if s
@@ -92,7 +93,7 @@ handles.output = hObject;
 
 set(hObject,'CloseRequestFcn',@figure_CloseRequestFcn);
 
-update_figure(handles);
+update_figure(handles,true);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -148,6 +149,7 @@ function Load_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+update_figure(handles,false);
 persistent directory
 if isempty(directory)  directory=pwd;  end
 
@@ -158,7 +160,7 @@ handles=configure_analog_output_channels(handles);
 handles=configure_analog_input_channels(handles);
 handles=configure_digital_channels(handles);
 handles=configure_video_channels(handles);
-update_figure(handles);
+update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -182,11 +184,12 @@ function Reset_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+update_figure(handles,false);
 questdlg('Reset configuration to default?','','Yes','No','No');
 if(strcmp(ans,'No'))  return;  end
 handles=initialize(handles);
 handles=query_hardware(handles);
-update_figure(handles);
+update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -255,7 +258,7 @@ if(~handles.running)
               fclose(handles.analog.in.fid);
               delete(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']));
               handles.running=0;
-              update_figure(handles);
+              update_figure(handles,true);
               return;
           end
         case 4
@@ -447,7 +450,7 @@ elseif(handles.running)
   handles.running=0;
 end
 
-update_figure(handles);
+update_figure(handles,true);
 guidata(hObject, handles);
 
 if handles.verbose>1
@@ -468,8 +471,9 @@ function TimeLimit_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of TimeLimit as text
 %        str2double(get(hObject,'String')) returns contents of TimeLimit as a double
 
+update_figure(handles,false);
 handles.timelimit=str2num(get(handles.TimeLimit,'string'));
-update_figure(handles);
+update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -726,7 +730,7 @@ save(filename,'handles');
 
 
 % ---
-function update_figure(handles)
+function update_figure(handles, flag)
 
 if(isfield(handles,'analogGui'))
   analogHandles = guidata(handles.analogGui);
@@ -742,7 +746,7 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogOutNFFT,'enable','off');
   set(analogHandles.AnalogOutFile,'enable','off');
   set(analogHandles.AnalogOutStyle,'enable','off');
-  if(handles.analog.out.on && (handles.analog.out.maxn>0))
+  if(flag && handles.analog.out.on && (handles.analog.out.maxn>0))
     set(analogHandles.AnalogOutNumChannels,'string',handles.analog.out.n);
     set(analogHandles.AnalogOutChannel,'string',[1:handles.analog.out.n]);
     set(analogHandles.AnalogOutChannel,'value',handles.analog.out.curr);
@@ -799,7 +803,7 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogInNFFT,'enable','off');
   set(analogHandles.AnalogInDirectory,'enable','off');
   set(analogHandles.AnalogInStyle,'enable','off');
-  if(handles.analog.in.on && (handles.analog.in.maxn>0))
+  if(flag && handles.analog.in.on && (handles.analog.in.maxn>0))
     set(analogHandles.AnalogInNumChannels,'string',handles.analog.in.n);
     set(analogHandles.AnalogInChannel,'string',[1:handles.analog.in.n]);
     set(analogHandles.AnalogInChannel,'value',handles.analog.in.curr);
@@ -863,7 +867,7 @@ if(isfield(handles,'digitalGui'))
   set(digitalHandles.DigitalOutAutoScale,'enable','off');
   set(digitalHandles.DigitalOutFile,'enable','off');
   set(digitalHandles.DigitalOutStyle,'enable','off');
-  if(handles.digital.out.on && (handles.digital.out.maxn>0))
+  if(flag && handles.digital.out.on && (handles.digital.out.maxn>0))
     set(digitalHandles.DigitalOutNumChannels,'string',handles.digital.out.n);
     if(handles.digital.direction)
       set(digitalHandles.DigitalOutDirection,'string','Up from 0');
@@ -898,7 +902,7 @@ if(isfield(handles,'digitalGui'))
   set(digitalHandles.DigitalInAutoScale,'enable','off');
   set(digitalHandles.DigitalInDirectory,'enable','off');
   set(digitalHandles.DigitalInStyle,'enable','off');
-  if(handles.digital.in.on && (handles.digital.in.maxn>0))
+  if(flag && handles.digital.in.on && (handles.digital.in.maxn>0))
     set(digitalHandles.DigitalInNumChannels,'string',handles.digital.in.n);
     if(handles.digital.direction)
       set(digitalHandles.DigitalInDirection,'string',['Down from ' num2str(handles.digital.in.maxn)]);
@@ -946,7 +950,7 @@ if(isfield(handles,'videoGui'))
   set(videoHandles.VideoHistogram,'enable','off');
   set(videoHandles.VideoChannel,'enable','off');
   set(videoHandles.VideoParams,'enable','off');
-  if(handles.video.on && (handles.video.maxn>0))
+  if(flag && handles.video.on && (handles.video.maxn>0))
     set(videoHandles.VideoSyncPulseOnly,'value',handles.video.syncpulseonly);
     set(videoHandles.VideoFPS,'string',handles.video.FPS);
     set(videoHandles.VideoROI,'string',num2str(handles.video.ROI{handles.video.curr},'%d,%d,%d,%d'));
@@ -1033,6 +1037,17 @@ if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
   set(handles.SamplingRate,'enable','off');
 end
 set(handles.DAQ,'enable','off','value',handles.daq);
+set(handles.StartStop,'enable','off');
+
+set(handles.Load,'enable','off');
+set(handles.Save,'enable','off');
+set(handles.Reset,'enable','off');
+
+if(~flag)  return;  end
+
+set(handles.Load,'enable','on');
+set(handles.Save,'enable','on');
+set(handles.Reset,'enable','on');
 
 if(~handles.running)
   if(isfield(handles,'analogGui'))
@@ -1087,7 +1102,6 @@ if(length(unique(tmp))>1)
   warndlg(tmp2);
 end
 
-set(handles.StartStop,'enable','off');
 if((isfield(handles,'analogGui') && (handles.analog.out.on || handles.analog.in.on)) || ...
    (isfield(handles,'digitalGui') && (handles.digital.out.on || handles.digital.in.on)) || ...
    handles.video.on)
@@ -1964,7 +1978,7 @@ end
 delete(handles.session);
 
 handles=query_hardware(handles);
-update_figure(handles);
+update_figure(handles,true);
 
 guidata(hObject, handles);
 

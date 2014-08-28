@@ -120,8 +120,9 @@ function AnalogInChannel_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogInChannel
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.in.curr=get(handles.AnalogInChannel,'value');
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -147,6 +148,7 @@ function AnalogInNumChannels_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of AnalogInNumChannels as a double
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 tmp=str2num(get(hObject,'String'));
 if(tmp>omnivoreHandles.analog.in.maxn)
   tmp=omnivoreHandles.analog.in.maxn;
@@ -155,7 +157,7 @@ end
 omnivoreHandles.analog.in.n=tmp;
 omnivoreHandles.analog.in.curr = min(omnivoreHandles.analog.in.curr, omnivoreHandles.analog.in.n);
 omnivoreHandles=omnivoreHandles.configure_analog_input_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -181,9 +183,10 @@ function AnalogInOnOff_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of AnalogInOnOff
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.in.on=~omnivoreHandles.analog.in.on;
 omnivoreHandles=omnivoreHandles.configure_analog_input_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -197,9 +200,10 @@ function AnalogInRange_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogInRange
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.in.range=get(hObject,'value');
 omnivoreHandles=omnivoreHandles.configure_analog_input_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -226,9 +230,10 @@ function AnalogInTerminalConfiguration_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogInTerminalConfiguration
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.in.terminal_configuration=get(hObject,'value');
 omnivoreHandles=omnivoreHandles.configure_analog_input_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -255,8 +260,9 @@ function AnalogInStyle_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogInStyle
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.in.style=get(hObject,'value');
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -466,8 +472,9 @@ function AnalogOutChannel_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogOutChannel
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.out.curr=get(hObject,'value');
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -493,9 +500,10 @@ function AnalogOutOnOff_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of AnalogOutOnOff
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.out.on=~omnivoreHandles.analog.out.on;
 omnivoreHandles=omnivoreHandles.configure_analog_output_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -508,6 +516,7 @@ function AnalogOutNumChannels_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of AnalogOutNumChannels as a double
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 tmp=str2num(get(hObject,'String'));
 if(tmp>omnivoreHandles.analog.out.maxn)
   tmp=omnivoreHandles.analog.out.maxn;
@@ -516,7 +525,7 @@ end
 omnivoreHandles.analog.out.n=tmp;
 omnivoreHandles.analog.out.curr = min(omnivoreHandles.analog.out.curr, omnivoreHandles.analog.out.n);
 omnivoreHandles=omnivoreHandles.configure_analog_output_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -543,9 +552,10 @@ function AnalogOutRange_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogOutRange
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.out.range=get(hObject,'value');
 omnivoreHandles=omnivoreHandles.configure_analog_output_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -572,8 +582,9 @@ function AnalogOutStyle_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from AnalogOutStyle
 
 omnivoreHandles = guidata(handles.omnivore);
+omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.analog.out.style=get(hObject,'value');
-omnivoreHandles.update_figure(omnivoreHandles);
+omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
