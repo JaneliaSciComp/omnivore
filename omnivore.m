@@ -275,15 +275,17 @@ if(~handles.running)
     handles.digital.in.fid = nan;
     % the one extra (zero valued) sample tic at the beginning
     % introduces a time shift of 1/Fs
-    tmp=32;
-    if(handles.digital.in.n<=8)
-      tmp=8;
-    elseif(handles.digital.in.n<=16)
-      tmp=16;
+    if(handles.analog.in.record)
+      tmp=32;
+      if(handles.digital.in.n<=8)
+        tmp=8;
+      elseif(handles.digital.in.n<=16)
+        tmp=16;
+      end
+      tmp2=fullfile(handles.digital.in.directory,[handles.filename 'd.wav']);
+      audiowrite(tmp2, uint8(0), handles.samplingrate, 'bitspersample', tmp);
+      handles.digital.in.fid = fopen(tmp2,'r+');
     end
-    tmp2=fullfile(handles.digital.in.directory,[handles.filename 'd.wav']);
-    audiowrite(tmp2, uint8(0), handles.samplingrate, 'bitspersample', tmp);
-    handles.digital.in.fid = fopen(tmp2,'r+');
   end
   
   if(handles.analog.in.on || handles.digital.in.on)
@@ -374,12 +376,12 @@ elseif(handles.running)
   
   if(handles.analog.in.on || handles.digital.in.on)
     delete(handles.listenerIn);
-    if(handles.analog.in.record)
-      fclose(handles.analog.in.fid);
-    end
-    if(handles.digital.in.record)
-      fclose(handles.digital.in.fid);
-    end
+  end
+  if(handles.analog.in.on && handles.analog.in.record)
+    fclose(handles.analog.in.fid);
+  end
+  if(handles.digital.in.on && handles.digital.in.record)
+    fclose(handles.digital.in.fid);
   end
 
   if((handles.digital.out.on || handles.digital.in.on) && ...
