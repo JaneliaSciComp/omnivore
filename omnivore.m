@@ -262,20 +262,15 @@ if(~handles.running)
               return;
           end
         case 4
-          % the one extra (zero valued) sample tic at the beginning
-          % introduces a time shift of 1/Fs
           tmp2=fullfile(handles.analog.in.directory,[handles.filename 'a.wav']);
-          audiowrite(tmp2, zeros(1,handles.analog.in.n), handles.samplingrate, 'bitspersample', 32);
-          handles.analog.in.fid = fopen(tmp2,'r+');
+          handles.analog.in.fid=wav_init(tmp2, handles.analog.in.n, handles.samplingrate, 32, 'float');
       end
     end
   end
 
   if(handles.digital.in.on)
     handles.digital.in.fid = nan;
-    % the one extra (zero valued) sample tic at the beginning
-    % introduces a time shift of 1/Fs
-    if(handles.analog.in.record)
+    if(handles.digital.in.record)
       tmp=32;
       if(handles.digital.in.n<=8)
         tmp=8;
@@ -283,8 +278,7 @@ if(~handles.running)
         tmp=16;
       end
       tmp2=fullfile(handles.digital.in.directory,[handles.filename 'd.wav']);
-      audiowrite(tmp2, uint8(0), handles.samplingrate, 'bitspersample', tmp);
-      handles.digital.in.fid = fopen(tmp2,'r+');
+      handles.digital.in.fid=wav_init(tmp2, 1, handles.samplingrate, tmp, 'int');
     end
   end
   
@@ -1694,22 +1688,9 @@ if(isfield(handles,'analogGui') && handles.analog.in.on)
         d=bsxfun(@rdivide,d,handles.analog.in.step);
         fwrite(handles.analog.in.fid,d','int16');
       case 4
-        data_length = numel(evt.Data(:,idx)) * 4;
-
-        fseek(handles.analog.in.fid,4,'bof');
-        chunk_size = fread(handles.analog.in.fid, 1, 'uint32', 0, 'ieee-le');
-        fseek(handles.analog.in.fid,4,'bof');
-        fwrite(handles.analog.in.fid,chunk_size + data_length,'uint32', 0, 'ieee-le'); 
-
-        fseek(handles.analog.in.fid,42,'bof');
-        subchunk_size = fread(handles.analog.in.fid, 1, 'uint32', 0, 'ieee-le');
-        fseek(handles.analog.in.fid,42,'bof');
-        fwrite(handles.analog.in.fid,subchunk_size + data_length, 'uint32', 0, 'ieee-le');
-
-        fseek(handles.analog.in.fid,0,'eof');
-        fwrite(handles.analog.in.fid, ...
+        wav_append(handles.analog.in.fid, ...
             evt.Data(:,idx) ./ handles.analog.in.ranges_available(handles.analog.in.range).Max, ...
-            'single', 0, 'ieee-le');
+            32, 'float');
     end
   end
 end
@@ -1720,30 +1701,17 @@ if(isfield(handles,'digitalGui') && handles.digital.in.on)
   digital_plot(digitalHandles.DigitalInPlot, evt.Data(:,idx), handles.digital.in, handles.samplingrate);
 
   if(handles.digital.in.record)
-    data_length = numel(evt.Data(:,idx)) * 4;
-
-    fseek(handles.digital.in.fid,4,'bof');
-    chunk_size = fread(handles.digital.in.fid, 1, 'uint32');
-    fseek(handles.digital.in.fid,4,'bof');
-    fwrite(handles.digital.in.fid,chunk_size + data_length,'uint32'); 
-
-    fseek(handles.digital.in.fid,42,'bof');
-    subchunk_size = fread(handles.digital.in.fid, 1, 'uint32');
-    fseek(handles.digital.in.fid,42,'bof');
-    fwrite(handles.digital.in.fid,subchunk_size + data_length, 'uint32');
-
-    tmp2=bin2dec(num2str(evt.Data(:,idx)));
+    tmp2=bin2dec(num2str(fliplr(evt.Data(:,idx))));
     if(handles.digital.in.n<=8)
-      tmp='uint8';
+      tmp=8;
     elseif(handles.digital.in.n<=16)
-      tmp='int16';
+      tmp=16;
       tmp2=tmp2-INTMAX(tmp)/2;
     else
-      tmp='int32';
+      tmp=32;
       tmp2=tmp2-INTMAX(tmp)/2;
     end
-    fseek(handles.digital.in.fid,0,'eof');
-    fwrite(handles.digital.in.fid, tmp2, tmp);
+    wav_append(handles.digital.in.fid, tmp2, tmp, 'int');
   end
 end
 
@@ -1763,6 +1731,61 @@ if handles.verbose>0
         num2str(toc/(length(evt.Data)/handles.samplingrate),3) 'x real time is ' ...
         num2str(toc,3) 's to process ' ...
         num2str(length(evt.Data)/handles.samplingrate,3) 's of data']);
+end
+
+
+function fid=wav_init(filename, nchan, Fs, nbits, format)
+
+fid = fopen(filename,'w+');
+fwrite(fid, 'RIFF');
+fwrite(fid, 36, 'uint32');       % size
+fwrite(fid, 'WAVE');
+fwrite(fid, 'fmt ');
+fwrite(fid, 16, 'uint32');       % size
+if(strcmp(format,'float'))
+  fwrite(fid, 3, 'uint16');        % format IEEE
+elseif(strcmp(format,'int'))
+  fwrite(fid, 1, 'uint16');        % format PCM
+else
+  error('ERROR: format must be either ''float'' or ''int''');
+end
+fwrite(fid, nchan, 'uint16');    % nchan
+fwrite(fid, Fs, 'uint32');       % Fs
+fwrite(fid, 0, 'uint32');        % bps
+fwrite(fid, nbits/8, 'uint16');  % block align
+fwrite(fid, nbits, 'uint16');    % bits per sample
+fwrite(fid, 'data');
+fwrite(fid, 0, 'uint32');        % size
+
+
+function wav_append(fid, data, nbits, format)
+
+inc = nbits/8*numel(data);
+
+fseek(fid, 4, 'bof');
+chunk_size = fread(fid, 1, 'uint32');
+fseek(fid, 4, 'bof');
+fwrite(fid, chunk_size + inc, 'uint32'); 
+
+fseek(fid, 40, 'bof');
+chunk_size = fread(fid, 1, 'uint32');
+fseek(fid, 40, 'bof');
+fwrite(fid, chunk_size + inc, 'uint32');
+
+fseek(fid,0,'eof');
+if(strcmp(format,'float'))
+  fwrite(fid, data', 'single', 0, 'ieee-le');
+elseif(strcmp(format,'int'))
+  switch nbits
+    case 8
+      fwrite(fid, data', 'uint8');
+    case 16
+      fwrite(fid, data', 'int16');
+    case 32
+      fwrite(fid, data', 'int32');
+  end
+else
+  error('ERROR: format must be either ''float'' or ''int''');
 end
 
 
