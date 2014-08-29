@@ -1303,6 +1303,7 @@ try
   % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   tmp=daq.getDevices;
   set(handles.DAQ,'string',{tmp.ID});
+  handles.daq=min(length(tmp),handles.daq);
   handles.daqdevices=tmp(handles.daq);
 catch
   uiwait(warndlg('no digitizer found'));
