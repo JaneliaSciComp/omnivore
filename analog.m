@@ -446,8 +446,8 @@ if(get(handles.AnalogOutPlay,'value'))
   if(filename~=0)
     omnivoreHandles.analog.out.play(channel)=1;
     omnivoreHandles.analog.out.file{channel}=fullfile(directory,filename);
-    [omnivoreHandles.analog.out.y{channel},omnivoreHandles.analog.out.fs(channel),~]=...
-        wavread(omnivoreHandles.analog.out.file{channel});
+    [omnivoreHandles.analog.out.y{channel},omnivoreHandles.analog.out.fs(channel)]=...
+        audioread(omnivoreHandles.analog.out.file{channel});
     omnivoreHandles.analog.out.idx(channel)=1;
     set(handles.AnalogOutFile,'string',omnivoreHandles.analog.out.file(channel),'enable','on');
   else
