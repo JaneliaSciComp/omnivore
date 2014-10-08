@@ -77,6 +77,9 @@ handles.video_takedown_preview = @video_takedown_preview;
 guidata(hObject, handles);
 
 handles=query_hardware(handles);
+if isfield(handles,'position')
+  set(handles.figure1,'position', handles.position);
+end
 
 %delete(timerfind);
 
@@ -686,10 +689,32 @@ handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
 handles.samplingrate=handles_saved.samplingrate;
 handles.daq=handles_saved.daq;
-        
-        
+
+handles.position=handles_saved.position;
+if isfield(handles_saved.analog,'position')
+  handles.analog.position=handles_saved.analog.position;
+end
+if isfield(handles_saved.digital,'position')
+  handles.digital.position=handles_saved.digital.position;
+end
+if isfield(handles_saved.video,'position')
+  handles.video.position=handles_saved.video.position;
+end
+
+
 % ---
 function save_config_file(handles,filename)
+
+handles.position=get(handles.figure1,'position');
+if isfield(handles,'analogGui')
+  handles.analog.position=get(handles.analogGui,'position');
+end
+if isfield(handles,'digitalGui')
+  handles.digital.position=get(handles.digitalGui,'position');
+end
+if isfield(handles,'videoGui')
+  handles.video.position=get(handles.videoGui,'position');
+end
 
 tmp=fieldnames(handles);
 for(i=1:length(tmp))
@@ -723,6 +748,7 @@ end
 if isfield(handles.video, 'actx')
   handles.video = rmfield(handles.video, 'actx');
 end
+
 save(filename,'handles');
 
 
@@ -1336,6 +1362,9 @@ if(isfield(handles,'daqdevices'))
   
   if((~isempty(idxAO)) || (~isempty(idxAI)))
     handles.analogGui=analog('omnivore', handles.figure1);
+    if isfield(handles.analog,'position')
+      set(handles.analogGui,'position', handles.analog.position);
+    end
     analogHandles = guidata(handles.analogGui);
   end
     
@@ -1378,6 +1407,9 @@ if(isfield(handles,'daqdevices'))
 
   if(~isempty(idxDIO))
     handles.digitalGui=digital('omnivore', handles.figure1);
+    if isfield(handles.digital,'position')
+      set(handles.digitalGui,'position', handles.digital.position);
+    end
     digitalHandles = guidata(handles.digitalGui);
     
     tmp=sum(cellfun(@(x) strncmp(x,'port0',5), handles.daqdevices.Subsystems(idxDIO).ChannelNames));
@@ -1427,6 +1459,9 @@ if(isfield(handles,'videoadaptors'))
   end
   if(maxn>0)
     handles.videoGui=video('omnivore', handles.figure1);
+    if isfield(handles.video,'position')
+      set(handles.videoGui,'position', handles.video.position);
+    end
     videoHandles = guidata(handles.videoGui);
 
     tmp=VideoWriter(tempname);
