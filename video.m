@@ -128,7 +128,7 @@ function VideoChannel_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoChannel
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 if omnivoreHandles.running
   omnivoreHandles=omnivoreHandles.video_takedown_preview(omnivoreHandles);
 end
@@ -136,7 +136,7 @@ omnivoreHandles.video.curr=get(handles.VideoChannel,'value');
 if omnivoreHandles.running
   omnivoreHandles=omnivoreHandles.video_setup_preview(omnivoreHandles);
 end
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -163,10 +163,10 @@ function VideoFPS_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of VideoFPS as a double
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.FPS=str2num(get(hObject,'String'));
 omnivoreHandles=omnivoreHandles.configure_video_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -193,7 +193,7 @@ function VideoNumChannels_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of VideoNumChannels as a double
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 tmp=str2num(get(hObject,'String'));
 if(tmp>omnivoreHandles.video.maxn)
   tmp=omnivoreHandles.video.maxn;
@@ -202,7 +202,7 @@ end
 omnivoreHandles.video.n=tmp;
 omnivoreHandles.video.curr = min(omnivoreHandles.video.curr, omnivoreHandles.video.n);
 omnivoreHandles=omnivoreHandles.configure_video_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -228,10 +228,10 @@ function VideoOnOff_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of VideoOnOff
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.on=~omnivoreHandles.video.on;
 omnivoreHandles=omnivoreHandles.configure_video_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -244,12 +244,12 @@ function VideoROI_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of VideoROI as a double
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.ROI{omnivoreHandles.video.curr}=str2num(get(hObject,'String'));
 if omnivoreHandles.video.sameroi==1
   omnivoreHandles.video.ROI=repmat(omnivoreHandles.video.ROI(omnivoreHandles.video.curr), 1, omnivoreHandles.video.n);
 end
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -276,7 +276,7 @@ function VideoFormat_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoFormat
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 i=omnivoreHandles.video.curr;
 omnivoreHandles.video.formatvalue(i)=get(handles.VideoFormat,'value');
 %handles.video.params{handles.video.curr}=[];
@@ -284,7 +284,7 @@ omnivoreHandles.video.params{i}=omnivoreHandles.get_video_params(...
   omnivoreHandles.video.adaptor(i),...
   omnivoreHandles.video.deviceid(i),...
   omnivoreHandles.video.formatlist{i}{omnivoreHandles.video.formatvalue(i)});
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -311,13 +311,13 @@ function VideoTrigger_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoTrigger
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 if omnivoreHandles.video.syncpulseonly && (get(handles.VideoTrigger,'value')==1)
   set(handles.VideoTrigger,'value',2)
 end
 omnivoreHandles.video.counter=get(handles.VideoTrigger,'value');
 omnivoreHandles=omnivoreHandles.configure_video_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -344,9 +344,9 @@ function VideoFileFormat_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoFileFormat
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.fileformat=get(handles.VideoFileFormat,'value');
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -460,9 +460,9 @@ function VideoTimeStamps_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from VideoTimeStamps
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.timestamps=get(handles.VideoTimeStamps,'value');
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -539,13 +539,13 @@ function VideoSyncPulseOnly_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of VideoSyncPulseOnly
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.video.syncpulseonly=get(handles.VideoSyncPulseOnly,'value');
 if omnivoreHandles.video.syncpulseonly && (omnivoreHandles.video.counter==1)
   omnivoreHandles.video.counter=2;
   set(handles.VideoTrigger,'value',2)
 end
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 guidata(hObject,handles);
 

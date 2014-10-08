@@ -117,7 +117,7 @@ function DigitalInNumChannels_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of DigitalInNumChannels as a double
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 tmp=str2num(get(hObject,'String'));
 tmp2=min([tmp omnivoreHandles.digital.in.maxn]);
 if(omnivoreHandles.digital.out.on)
@@ -130,7 +130,7 @@ if(tmp2~=tmp)
 end
 omnivoreHandles.digital.in.n=tmp;
 omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -156,7 +156,7 @@ function DigitalInOnOff_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of DigitalInOnOff
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.digital.in.on=~omnivoreHandles.digital.in.on;
 if(omnivoreHandles.digital.in.on && omnivoreHandles.digital.out.on)
   tmp=omnivoreHandles.digital.in.n + omnivoreHandles.digital.out.n;
@@ -166,7 +166,7 @@ if(omnivoreHandles.digital.in.on && omnivoreHandles.digital.out.on)
   end
 end
 omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -180,9 +180,9 @@ function DigitalInStyle_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from DigitalInStyle
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.digital.in.style=get(hObject,'value');
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -247,6 +247,7 @@ else
   set(handles.DigitalOutFile,'enable','off');
 end
 
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 guidata(hObject,handles);
 
@@ -260,7 +261,7 @@ function DigitalOutOnOff_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of DigitalOutOnOff
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.digital.out.on=~omnivoreHandles.digital.out.on;
 if(omnivoreHandles.digital.out.on && omnivoreHandles.digital.in.on)
   tmp=omnivoreHandles.digital.out.n + omnivoreHandles.digital.in.n;
@@ -270,7 +271,7 @@ if(omnivoreHandles.digital.out.on && omnivoreHandles.digital.in.on)
   end
 end
 omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -283,7 +284,7 @@ function DigitalOutNumChannels_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of DigitalOutNumChannels as a double
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 tmp=str2num(get(hObject,'String'));
 tmp2=min([tmp omnivoreHandles.digital.out.maxn]);
 if(omnivoreHandles.digital.in.on)
@@ -296,7 +297,7 @@ if(tmp2~=tmp)
 end
 omnivoreHandles.digital.out.n=tmp;
 omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -323,9 +324,9 @@ function DigitalOutStyle_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from DigitalOutStyle
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.digital.out.style=get(hObject,'value');
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 
@@ -374,8 +375,8 @@ function DigitalDirection_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of DigitalInDirection
 
 omnivoreHandles = guidata(handles.omnivore);
-omnivoreHandles.update_figure(omnivoreHandles,false);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,false);
 omnivoreHandles.digital.direction=~omnivoreHandles.digital.direction;
 omnivoreHandles=omnivoreHandles.configure_digital_channels(omnivoreHandles);
-omnivoreHandles.update_figure(omnivoreHandles,true);
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);

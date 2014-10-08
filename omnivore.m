@@ -58,7 +58,7 @@ if(exist(handles.rcfilename)==2)
 else
   handles=initialize(handles);
 end
-update_figure(handles,false);
+handles = update_figure(handles,false);
 
 [s,handles.git]=system('"c:\\Program Files (x86)\Git\bin\git" log -1 --pretty=format:"%ci %H"');
 if s
@@ -93,7 +93,7 @@ handles.output = hObject;
 
 set(hObject,'CloseRequestFcn',@figure_CloseRequestFcn);
 
-update_figure(handles,true);
+handles = update_figure(handles,true);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -149,7 +149,7 @@ function Load_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-update_figure(handles,false);
+handles = update_figure(handles,false);
 persistent directory
 if isempty(directory)  directory=pwd;  end
 
@@ -160,7 +160,7 @@ handles=configure_analog_output_channels(handles);
 handles=configure_analog_input_channels(handles);
 handles=configure_digital_channels(handles);
 handles=configure_video_channels(handles);
-update_figure(handles,true);
+handles = update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -184,12 +184,12 @@ function Reset_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-update_figure(handles,false);
+handles = update_figure(handles,false);
 questdlg('Reset configuration to default?','','Yes','No','No');
 if(strcmp(ans,'No'))  return;  end
 handles=initialize(handles);
 handles=query_hardware(handles);
-update_figure(handles,true);
+handles = update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -258,7 +258,7 @@ if(~handles.running)
               fclose(handles.analog.in.fid);
               delete(fullfile(handles.analog.in.directory,[handles.filename 'a.bin']));
               handles.running=0;
-              update_figure(handles,true);
+              handles = update_figure(handles,true);
               return;
           end
         case 4
@@ -292,6 +292,7 @@ if(~handles.running)
     handles.analog.out.idx(logical(handles.analog.out.play))=1;
     handles.digital.out.idx(logical(handles.digital.out.play))=1;
     guidata(hObject, handles);
+    tmp=[];
     tmp.Source.Channels=handles.session.Channels;
     for(i=1:5)  out_callback(hObject, tmp, handles.figure1);  end
     handles=guidata(hObject);
@@ -311,7 +312,7 @@ if(~handles.running)
     tmp=handles.analog.in.directory;
   elseif(handles.digital.in.record)
     tmp=handles.digital.in.directory;
-  else
+  elseif ~isnan(handles.video.n)
     for i=1:handles.video.n
       if handles.video.save(i)
         tmp=handles.video.directory{i};
@@ -446,7 +447,7 @@ elseif(handles.running)
   handles.running=0;
 end
 
-update_figure(handles,true);
+handles = update_figure(handles,true);
 guidata(hObject, handles);
 
 if handles.verbose>1
@@ -467,9 +468,9 @@ function TimeLimit_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of TimeLimit as text
 %        str2double(get(hObject,'String')) returns contents of TimeLimit as a double
 
-update_figure(handles,false);
+handles = update_figure(handles,false);
 handles.timelimit=str2num(get(handles.TimeLimit,'string'));
-update_figure(handles,true);
+handles = update_figure(handles,true);
 guidata(hObject, handles);
 
 
@@ -726,7 +727,7 @@ save(filename,'handles');
 
 
 % ---
-function update_figure(handles, flag)
+function handles = update_figure(handles, flag)
 
 if(isfield(handles,'analogGui'))
   analogHandles = guidata(handles.analogGui);
@@ -1045,6 +1046,33 @@ set(handles.Load,'enable','on');
 set(handles.Save,'enable','on');
 set(handles.Reset,'enable','on');
 
+tmp=[];  tmp2={};
+if((isfield(handles,'analogGui') && handles.analog.in.on && (sum(handles.analog.in.record)>0)) || ...
+   (isfield(handles,'digitalGui') && handles.digital.in.on && (handles.digital.in.n>0)))
+  tmp=[tmp handles.samplingrate];
+  %tmp2{end+1}=['box = ' num2str(get(handles.SamplingRate,'string'))];
+  tmp2{end+1}=['box = ' num2str(handles.samplingrate)];
+end
+if(isfield(handles,'analogGui') && handles.analog.out.on && (sum(handles.analog.out.play)>0))
+  tmp=[tmp handles.analog.out.fs(logical(handles.analog.out.play))];
+  for(i=1:handles.analog.out.n)
+    if(~handles.analog.out.play(i))  continue;  end
+    tmp2{end+1}=['analog out #' num2str(i) ' = ' num2str(handles.analog.out.fs(i))];
+  end
+end
+if(isfield(handles,'digitalGui') && handles.digital.out.on && (handles.digital.out.n>0))
+  tmp=[tmp handles.digital.out.fs];
+  tmp2{end+1}=['digital out = ' num2str(handles.digital.out.fs)];
+end
+tmp=tmp(~isnan(tmp));
+handles.samplingrate=median(tmp);
+set(handles.SamplingRate,'string',handles.samplingrate);
+if(length(unique(tmp))>1)
+  tmp2={'not all sampling rates are the same:' tmp2{:}};
+  tmp2{end+1}=['will use ' num2str(handles.samplingrate)];
+  warndlg(tmp2);
+end
+
 if(~handles.running)
   if(isfield(handles,'analogGui'))
     if(handles.analog.in.maxn>0)
@@ -1064,7 +1092,7 @@ if(~handles.running)
   end
   if((isfield(handles,'analogGui') && handles.analog.in.on && (handles.analog.in.n>0)) || ...
     (isfield(handles,'digitalGui') && handles.digital.in.on && (handles.digital.in.n>0)))
-    set(handles.SamplingRate,'enable','on','string',handles.samplingrate);
+    set(handles.SamplingRate,'enable','on');
   end
   if(isfield(handles,'videoGui') && (handles.video.maxn>0))
     set(videoHandles.VideoOnOff,'enable','on');
@@ -1072,30 +1100,6 @@ if(~handles.running)
   set(handles.TimeLimit,'enable','on');
   set(handles.Verbose,'enable','on');
   set(handles.DAQ,'enable','on');
-end
-
-tmp=[];  tmp2={};
-if(strcmp(get(handles.SamplingRate,'enable'),'on'))
-  tmp=[tmp handles.samplingrate];
-  tmp2{end+1}=['box = ' num2str(get(handles.SamplingRate,'string'))];
-end
-if(isfield(handles,'analogGui') && handles.analog.out.on && (sum(handles.analog.out.play)>0))
-  tmp=[tmp handles.analog.out.fs(logical(handles.analog.out.play))];
-  for(i=1:handles.analog.out.n)
-    if(~handles.analog.out.play(i))  continue;  end
-    tmp2{end+1}=['analog #' num2str(i) ' = ' num2str(handles.analog.out.fs(i))];
-  end
-end
-if(isfield(handles,'digitalGui') && handles.digital.out.on && (handles.digital.out.n>0))
-  tmp=[tmp handles.digital.out.fs];
-  tmp2{end+1}=['digital = ' num2str(handles.digital.out.fs)];
-end
-tmp=tmp(~isnan(tmp));
-handles.samplingrate=median(tmp);
-if(length(unique(tmp))>1)
-  tmp2={'not all sampling rates are the same:' tmp2{:}};
-  tmp2{end+1}=['will go with ' num2str(handles.samplingrate) ' for now'];
-  warndlg(tmp2);
 end
 
 if((isfield(handles,'analogGui') && (handles.analog.out.on || handles.analog.in.on)) || ...
@@ -1126,7 +1130,7 @@ end
 
 if handles.analog.out.on && (handles.analog.out.n>0)
   [~,idx]=handles.session.addAnalogOutputChannel(handles.daqdevices.ID,0:(handles.analog.out.n-1),'voltage');
-  [handles.analog.Channels(idx).Range]=deal(handles.analog.out.ranges_available(handles.analog.out.range));
+  [handles.session.Channels(idx).Range]=deal(handles.analog.out.ranges_available(handles.analog.out.range));
 end
 
 if(length(handles.analog.out.play)~=handles.analog.out.n)
@@ -1179,7 +1183,7 @@ if(handles.digital.out.on) && (handles.digital.out.n>0)
   end
   for(i=start:incr:stop)
     handles.session.addDigitalChannel(handles.daqdevices.ID,...
-        ['port0/line' num2str(i)], 'InputOnly');
+        ['port0/line' num2str(i)], 'OutputOnly');
   end
 end
 
@@ -1673,9 +1677,12 @@ if handles.verbose>0
   tic
 end
 
+idx2=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogInputVoltageChannel') || ...
+                   strcmp(class(x),'daq.ni.DigitalInputChannel'), evt.Source.Channels);
+
 if(isfield(handles,'analogGui') && handles.analog.in.on)
   analogHandles = guidata(handles.analogGui);
-  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogInputVoltageChannel'), evt.Source.Channels);
+  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.AnalogInputVoltageChannel'), evt.Source.Channels(idx2));
   analog_plot(analogHandles.AnalogInPlot, evt.Data(:,idx), handles.analog.in, handles.samplingrate);
 
   if(handles.analog.in.record)
@@ -1698,7 +1705,7 @@ end
 
 if(isfield(handles,'digitalGui') && handles.digital.in.on)
   digitalHandles = guidata(handles.digitalGui);
-  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.DigitalInputChannel'), evt.Source.Channels);
+  idx=arrayfun(@(x) strcmp(class(x),'daq.ni.DigitalInputChannel'), evt.Source.Channels(idx2));
   digital_plot(digitalHandles.DigitalInPlot, evt.Data(:,idx), handles.digital.in, handles.samplingrate);
 
   if(handles.digital.in.record)
@@ -2004,7 +2011,7 @@ end
 delete(handles.session);
 
 handles=query_hardware(handles);
-update_figure(handles,true);
+handles = update_figure(handles,true);
 
 guidata(hObject, handles);
 
