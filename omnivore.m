@@ -757,6 +757,7 @@ function handles = update_figure(handles, flag)
 
 if(isfield(handles,'analogGui'))
   analogHandles = guidata(handles.analogGui);
+  set(analogHandles.AnalogOutOnOff,'enable','off');
   set(analogHandles.AnalogOutPlay,'enable','off');
   set(analogHandles.AnalogOutNumChannels,'enable','off');
   set(analogHandles.AnalogOutChannel,'enable','off');
@@ -770,6 +771,7 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogOutFile,'enable','off');
   set(analogHandles.AnalogOutStyle,'enable','off');
   if(flag && handles.analog.out.on && (handles.analog.out.maxn>0))
+    set(analogHandles.AnalogOutOnOff,'value',handles.analog.out.on);
     set(analogHandles.AnalogOutNumChannels,'string',handles.analog.out.n);
     set(analogHandles.AnalogOutChannel,'string',[1:handles.analog.out.n]);
     set(analogHandles.AnalogOutChannel,'value',handles.analog.out.curr);
@@ -812,6 +814,7 @@ if(isfield(handles,'analogGui'))
     end
   end
 
+  set(analogHandles.AnalogInOnOff,'enable','off');
   set(analogHandles.AnalogInRecord,'enable','off');
   set(analogHandles.AnalogInNumChannels,'enable','off');
   set(analogHandles.AnalogInChannel,'enable','off');
@@ -827,6 +830,7 @@ if(isfield(handles,'analogGui'))
   set(analogHandles.AnalogInDirectory,'enable','off');
   set(analogHandles.AnalogInStyle,'enable','off');
   if(flag && handles.analog.in.on && (handles.analog.in.maxn>0))
+    set(analogHandles.AnalogInOnOff,'value',handles.analog.in.on);
     set(analogHandles.AnalogInNumChannels,'string',handles.analog.in.n);
     set(analogHandles.AnalogInChannel,'string',[1:handles.analog.in.n]);
     set(analogHandles.AnalogInChannel,'value',handles.analog.in.curr);
@@ -884,6 +888,7 @@ end
 
 if(isfield(handles,'digitalGui'))
   digitalHandles = guidata(handles.digitalGui);
+  set(digitalHandles.DigitalOutOnOff,'enable','off');
   set(digitalHandles.DigitalOutPlay,'enable','off');
   set(digitalHandles.DigitalOutNumChannels,'enable','off');
   set(digitalHandles.DigitalOutDirection,'enable','off');
@@ -891,6 +896,7 @@ if(isfield(handles,'digitalGui'))
   set(digitalHandles.DigitalOutFile,'enable','off');
   set(digitalHandles.DigitalOutStyle,'enable','off');
   if(flag && handles.digital.out.on && (handles.digital.out.maxn>0))
+    set(digitalHandles.DigitalOutOnOff,'value',handles.digital.out.on);
     set(digitalHandles.DigitalOutNumChannels,'string',handles.digital.out.n);
     if(handles.digital.direction)
       set(digitalHandles.DigitalOutDirection,'string','Up from 0');
@@ -919,6 +925,7 @@ if(isfield(handles,'digitalGui'))
     end
   end
 
+  set(digitalHandles.DigitalInOnOff,'enable','off');
   set(digitalHandles.DigitalInRecord,'enable','off');
   set(digitalHandles.DigitalInNumChannels,'enable','off');
   set(digitalHandles.DigitalInDirection,'enable','off');
@@ -926,6 +933,7 @@ if(isfield(handles,'digitalGui'))
   set(digitalHandles.DigitalInDirectory,'enable','off');
   set(digitalHandles.DigitalInStyle,'enable','off');
   if(flag && handles.digital.in.on && (handles.digital.in.maxn>0))
+    set(digitalHandles.DigitalInOnOff,'value',handles.digital.in.on);
     set(digitalHandles.DigitalInNumChannels,'string',handles.digital.in.n);
     if(handles.digital.direction)
       set(digitalHandles.DigitalInDirection,'string',['Down from ' num2str(handles.digital.in.maxn)]);
@@ -957,6 +965,7 @@ end
 
 if(isfield(handles,'videoGui'))
   videoHandles = guidata(handles.videoGui);
+  set(videoHandles.VideoOnOff,'enable','off');
   set(videoHandles.VideoSave,'enable','off');
   set(videoHandles.VideoSyncPulseOnly,'enable','off');
   set(videoHandles.VideoSameDirectory,'enable','off');
@@ -974,6 +983,7 @@ if(isfield(handles,'videoGui'))
   set(videoHandles.VideoChannel,'enable','off');
   set(videoHandles.VideoParams,'enable','off');
   if(flag && handles.video.on && (handles.video.maxn>0))
+    set(videoHandles.VideoOnOff,'value',handles.video.on);
     set(videoHandles.VideoSyncPulseOnly,'value',handles.video.syncpulseonly);
     set(videoHandles.VideoFPS,'string',handles.video.FPS);
     set(videoHandles.VideoROI,'string',num2str(handles.video.ROI{handles.video.curr},'%d,%d,%d,%d'));
@@ -1043,28 +1053,21 @@ if(isfield(handles,'videoGui'))
   end
 end
 
-if(isfield(handles,'analogGui'))
-  set(analogHandles.AnalogOutOnOff,'enable','off','value',handles.analog.out.on);
-  set(analogHandles.AnalogInOnOff,'enable','off','value',handles.analog.in.on);
-end
-if(isfield(handles,'digitalGui'))
-  set(digitalHandles.DigitalOutOnOff,'enable','off','value',handles.digital.out.on);
-  set(digitalHandles.DigitalInOnOff,'enable','off','value',handles.digital.in.on);
-end
-if(isfield(handles,'videoGui'))
-  set(videoHandles.VideoOnOff,'enable','off','value',handles.video.on);
-end
-set(handles.TimeLimit,'enable','off','string',num2str(handles.timelimit));
-set(handles.Verbose,'enable','off','value',handles.verbose+1);
-if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
-  set(handles.SamplingRate,'enable','off');
-end
-set(handles.DAQ,'enable','off','value',handles.daq);
-set(handles.StartStop,'enable','off');
-
 set(handles.Load,'enable','off');
 set(handles.Save,'enable','off');
 set(handles.Reset,'enable','off');
+set(handles.TimeLimit,'enable','off');
+set(handles.Verbose,'enable','off');
+if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
+  set(handles.SamplingRate,'enable','off');
+end
+set(handles.DAQ,'enable','off');
+set(handles.StartStop,'enable','off');
+if(flag)
+  set(handles.TimeLimit,'string',num2str(handles.timelimit));
+  set(handles.Verbose,'value',handles.verbose+1);
+  set(handles.DAQ,'value',handles.daq);
+end
 
 if(~flag)  return;  end
 
@@ -1073,13 +1076,13 @@ set(handles.Save,'enable','on');
 set(handles.Reset,'enable','on');
 
 tmp=[];  tmp2={};
-if((isfield(handles,'analogGui') && handles.analog.in.on && (sum(handles.analog.in.record)>0)) || ...
+if((isfield(handles,'analogGui') && handles.analog.in.on && (sum(handles.analog.in.n)>0)) || ...
    (isfield(handles,'digitalGui') && handles.digital.in.on && (handles.digital.in.n>0)))
   tmp=[tmp handles.samplingrate];
   %tmp2{end+1}=['box = ' num2str(get(handles.SamplingRate,'string'))];
   tmp2{end+1}=['box = ' num2str(handles.samplingrate)];
 end
-if(isfield(handles,'analogGui') && handles.analog.out.on && (sum(handles.analog.out.play)>0))
+if(isfield(handles,'analogGui') && handles.analog.out.on && (sum(handles.analog.out.n)>0))
   tmp=[tmp handles.analog.out.fs(logical(handles.analog.out.play))];
   for(i=1:handles.analog.out.n)
     if(~handles.analog.out.play(i))  continue;  end
@@ -1328,7 +1331,7 @@ delete(vi);
 function handles=query_hardware(handles)
 
 try
-  % next two lines only needed for roian's rig, and prohibit using chr & hyg simultaneously
+  % next two lines only needed for X-series devices, and even then there's still a bug
   % daq.reset;
   % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   tmp=daq.getDevices;
