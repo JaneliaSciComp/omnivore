@@ -350,6 +350,7 @@ if(~handles.running)
     handles.session.NotifyWhenDataAvailableExceeds=round(handles.session.Rate);
     handles.session.NotifyWhenScansQueuedBelow=5*round(handles.session.Rate);
     handles.session.IsContinuous=true;
+    daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
     handles.session.startBackground;
   end
   handles.triggertime=clock;
@@ -1331,9 +1332,9 @@ delete(vi);
 function handles=query_hardware(handles)
 
 try
-  % next two lines only needed for X-series devices, and even then there's still a bug
-  % daq.reset;
-  % daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  % next two lines only needed for X-series devices
+  daq.reset;
+  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   tmp=daq.getDevices;
   set(handles.DAQ,'string',{tmp.ID});
   handles.daq=min(length(tmp),handles.daq);
@@ -1438,6 +1439,8 @@ if(isfield(handles,'daqdevices'))
   if(~isempty(idxCO))
       handles.video.ncounters=handles.daqdevices.Subsystems(idxCO).NumberOfChannelsAvailable;
   end
+  
+  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
 end
 
 if(isfield(handles,'videoadaptors'))
