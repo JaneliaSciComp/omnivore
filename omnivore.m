@@ -1755,10 +1755,10 @@ if(isfield(handles,'digitalGui') && handles.digital.in.on)
       tmp=8;
     elseif(handles.digital.in.n<=16)
       tmp=16;
-      tmp2=tmp2-INTMAX(tmp)/2;
+      tmp2=tmp2-double(intmax(['int' num2str(tmp)]));
     else
       tmp=32;
-      tmp2=tmp2-INTMAX(tmp)/2;
+      tmp2=tmp2-double(intmax(['int' num2str(tmp)]));
     end
     wav_append(handles.digital.in.fid, tmp2, tmp, 'int');
   end
