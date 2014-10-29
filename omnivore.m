@@ -60,9 +60,10 @@ else
 end
 handles = update_figure(handles,false);
 
-[s,handles.git]=system('"c:\\Program Files (x86)\Git\bin\git" log -1 --pretty=format:"%ci %H"');
+[s,handles.git]=system(['"c:\\Program Files (x86)\Git\bin\git" --git-dir=' ...
+    fileparts(mfilename('fullpath')) '/.git log -1 --pretty=format:"%ci %H"']);
 if s
-    warning('cant''t find git.  to save version info, git-bash must be installed.');
+  warning('cant''t find git.  to save version info, git-bash must be installed.');
 end
 
 handles.configure_analog_input_channels = @configure_analog_input_channels;
