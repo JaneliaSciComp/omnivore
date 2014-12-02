@@ -1214,26 +1214,22 @@ end
 
 if(handles.digital.out.on) && (handles.digital.out.n>0)
   if(handles.digital.direction)
-    start=0; incr=1; stop=handles.digital.out.n-1;
+    start=0;  stop=handles.digital.out.n-1;
   else
-    start=handles.digital.out.maxn-1; incr=-1; stop=handles.digital.out.maxn-handles.digital.out.n;
+    start=handles.digital.out.maxn-1;  stop=handles.digital.out.maxn-handles.digital.out.n;
   end
-  for(i=start:incr:stop)
-    session.addDigitalChannel(daqdevices.ID,...
-        ['port0/line' num2str(i)], 'OutputOnly');
-  end
+  session.addDigitalChannel(daqdevices.ID,...
+      ['port0/line' num2str(start) ':' num2str(stop)], 'OutputOnly');
 end
 
 if(handles.digital.in.on) && (handles.digital.in.n>0)
   if(handles.digital.direction)
-    start=handles.digital.in.maxn-1; incr=-1; stop=handles.digital.in.maxn-handles.digital.in.n;
+    start=handles.digital.in.maxn-1;  stop=handles.digital.in.maxn-handles.digital.in.n;
   else
-    start=0; incr=1; stop=handles.digital.in.n-1;
+    start=0;  stop=handles.digital.in.n-1;
   end
-  for(i=start:incr:stop)
-    session.addDigitalChannel(daqdevices.ID,...
-        ['port0/line' num2str(i)], 'InputOnly');
-  end
+  session.addDigitalChannel(daqdevices.ID,...
+      ['port0/line' num2str(start) ':' num2str(stop)], 'InputOnly');
 end
 
 
