@@ -1334,7 +1334,7 @@ function handles=query_hardware(handles)
 
 try
   % next two lines only needed for X-series devices
-  daq.reset;
+  % daq.reset;
   daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   tmp=daq.getDevices;
   set(handles.DAQ,'string',{tmp.ID});
@@ -1902,11 +1902,21 @@ for i=1:handles.video.n
     if(handles.video.n>1)
       filename=[filename num2str(i)];
     end
+    if(handles.video.counter==1)
+      tmp = cellfun(@(x) strcmp(x,'FrameRate'), {handles.video.params{handles.video.curr}{:,1}});
+      if(any(tmp))
+        tmp = handles.video.params{handles.video.curr}{tmp,2};
+      else
+        tmp = handles.video.FPS;
+      end
+    else
+      tmp = handles.video.FPS;
+    end
     invoke(handles.video.actx(i), 'Execute', ...
         ['vifile=VideoWriter(''' ...
             fullfile(handles.video.directory{i}, filename) ''',''' ...
             handles.video.fileformats_available{handles.video.fileformat} ''');  '...
-        'set(vifile,''FrameRate'',' num2str(handles.video.FPS) quality ');']);
+        'set(vifile,''FrameRate'',' num2str(tmp) quality ');']);
     if handles.video.timestamps==1
       invoke(handles.video.actx(i), 'Execute', ...
           ['fid=[];']);
