@@ -22,7 +22,7 @@ function varargout = omnivore(varargin)
 
 % Edit the above text to modify the response to help omnivore
 
-% Last Modified by GUIDE v2.5 12-Aug-2014 16:11:47
+% Last Modified by GUIDE v2.5 04-Mar-2015 09:37:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -356,9 +356,9 @@ if(~handles.running)
   if(handles.analog.out.on || handles.analog.in.on || ...
         handles.digital.out.on || handles.digital.in.on || ...
         (handles.video.on && (handles.video.counter>1)))
-    session.NotifyWhenDataAvailableExceeds=round(session.Rate);
-    session.NotifyWhenScansQueuedBelow=5*round(session.Rate);
     session.IsContinuous=true;
+    session.NotifyWhenDataAvailableExceeds=round(session.Rate*handles.chunklength);
+    session.NotifyWhenScansQueuedBelow=5*round(session.Rate*handles.chunklength);
     daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
     session.startBackground;
   end
@@ -613,6 +613,7 @@ handles.filename='';
 handles.timelimit=0;
 handles.verbose=0;
 handles.samplingrate=nan;
+handles.chunklength=1;
 handles.daq=1;
 
 
@@ -700,6 +701,7 @@ handles.filename=handles_saved.filename;
 handles.timelimit=handles_saved.timelimit;
 handles.verbose=handles_saved.verbose;
 handles.samplingrate=handles_saved.samplingrate;
+handles.chunklength=handles_saved.chunklength;
 handles.daq=handles_saved.daq;
 
 handles.position=handles_saved.position;
@@ -1059,6 +1061,7 @@ set(handles.TimeLimit,'enable','off');
 set(handles.Verbose,'enable','off');
 if(isfield(handles,'analogGui') || isfield(handles,'digitalGui'))
   set(handles.SamplingRate,'enable','off');
+  set(handles.ChunkLength,'enable','off');
 end
 set(handles.DAQ,'enable','off');
 set(handles.StartStop,'enable','off');
@@ -1100,6 +1103,7 @@ if(length(unique(tmp))>1)
   tmp2{end+1}=['will use ' num2str(handles.samplingrate)];
   warndlg(tmp2);
 end
+set(handles.ChunkLength,'string',handles.chunklength);
 
 if(~handles.running)
   if(isfield(handles,'analogGui'))
@@ -1121,6 +1125,7 @@ if(~handles.running)
   if((isfield(handles,'analogGui') && handles.analog.in.on && (handles.analog.in.n>0)) || ...
     (isfield(handles,'digitalGui') && handles.digital.in.on && (handles.digital.in.n>0)))
     set(handles.SamplingRate,'enable','on');
+    set(handles.ChunkLength,'enable','on');
   end
   if(isfield(handles,'videoGui') && (handles.video.maxn>0))
     set(videoHandles.VideoOnOff,'enable','on');
@@ -2027,6 +2032,10 @@ function SamplingRate_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of SamplingRate as a double
 
 tmp=str2num(get(hObject,'String'));
+if tmp<0
+  tmp=1;
+  set(hObject,'String',tmp);
+end
 handles.samplingrate=tmp;
 guidata(hObject,handles);
 
@@ -2080,6 +2089,37 @@ function DAQ_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function ChunkLength_Callback(hObject, eventdata, handles)
+% hObject    handle to ChunkLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of ChunkLength as text
+%        str2double(get(hObject,'String')) returns contents of ChunkLength as a double
+
+tmp=str2num(get(hObject,'String'));
+if tmp<0
+  tmp=1;
+  set(hObject,'String',tmp);
+end
+handles.chunklength=tmp;
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function ChunkLength_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ChunkLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
