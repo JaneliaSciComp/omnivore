@@ -235,6 +235,7 @@ if(~handles.running)
       return;
     else
       session.Rate=rate;
+      handles.samplingrate=session.Rate;
     end
   end
 
@@ -1347,7 +1348,7 @@ function handles=query_hardware(handles)
 
 try
   % next two lines only needed for X-series devices
-  % daq.reset;
+  daq.reset;
   daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
   tmp=daq.getDevices;
   set(handles.DAQ,'string',{tmp.ID});
