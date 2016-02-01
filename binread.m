@@ -17,13 +17,13 @@ fs=fread(fid,1,'double');
 nchan=fread(fid,1,'double');
 switch version
     case 1
-        fseek(fid,start,'cof');
+        fseek(fid,8*start*nchan,'cof');
         y=fread(fid,[nchan len],'double');
         y=y';
         nbits=64;
         disp(['binread: version 1 (float64s), fs=' num2str(fs) ', nchan=' num2str(nchan) ', nsamples=' num2str(size(y,1))]);
     case 2
-        fseek(fid,start,'cof');
+        fseek(fid,4*start*nchan,'cof');
         y=fread(fid,[nchan len],'single');
         y=y';
         nbits=32;
@@ -32,7 +32,7 @@ switch version
         tmp=fread(fid,[2 nchan],'double');
         step=tmp(1,:);
         offset=tmp(2,:);
-        fseek(fid,start,'cof');
+        fseek(fid,2*start*nchan,'cof');
         y=fread(fid,[nchan len],'int16');
         y=bsxfun(@times,y',step);
         y=bsxfun(@plus,y,offset);
