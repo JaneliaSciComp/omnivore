@@ -733,7 +733,8 @@ end
 
 tmp=fieldnames(handles);
 for(i=1:length(tmp))
-  if(isnumeric(handles.(tmp{i})) && (numel(handles.(tmp{i}))==1)&& (handles.(tmp{i})>0) && ishandle(handles.(tmp{i})))
+  if((numel(handles.(tmp{i}))==1)&& ~isnumeric(handles.(tmp{i})) && ...
+        (ishandle(handles.(tmp{i})) || isa(handles.(tmp{i}),'function_handle')))
     handles=rmfield(handles,tmp{i});
   end
 end
