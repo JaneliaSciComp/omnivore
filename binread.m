@@ -1,6 +1,6 @@
 function [y,fs,nbits]=binread(file,varargin)
 % varargin can either be ommitted entirely,
-% or be a 2-vector of a sample range to return.
+% or be a 2-vector of a sample range ([start stop]) to return.
 % e.g. binread('foo.bin',[0 100]);
 
 if nargin>1

@@ -88,6 +88,23 @@ of the main window.
 Use [tempo](https://github.com/JaneliaSciComp/tempo) to view the resulting data.
 
 
+Troubleshooting
+===============
+
+Sometimes the most\_recent\_omnivore\_config.mat file can become corrupt.  If
+strange things happen, particularly when first starting up, quit Matlab, delete
+that file, and try again.
+
+If your camera isn't listed in the video panel, go to the Apps tab in the
+Matlab window and click on Image Acquisition.  If it doesn't work there, try
+the software that came with the camera (e.g. FlyCap for Point Grey).
+
+The drivers for Point Grey cameras must be installed using Matlab.  First, go
+to the Windows Control Panels and choose Add / Remove Programs to uninstall any
+existing copies of FlyCap.  Then in Matlab type supportPackageInstaller on the
+command line to reinstall a compatible version of FlyCap.
+
+
 Author
 ======
 
