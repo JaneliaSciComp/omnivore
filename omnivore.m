@@ -60,7 +60,11 @@ else
 end
 handles = update_figure(handles,false);
 
-[s,handles.git]=system(['"c:\\Program Files (x86)\Git\bin\git" --git-dir=' ...
+path2git='c:\\Program Files (x86)\Git\bin';
+if exist(path2git)==0
+  path2git='c:\\Program Files\Git\bin';
+end
+[s,handles.git]=system(['"' path2git '\git" --git-dir=' ...
     fileparts(mfilename('fullpath')) '/.git log -1 --pretty=format:"%ci %H"']);
 if s
   warning('cant''t find git.  to save version info, git-bash must be installed.');
@@ -1459,7 +1463,7 @@ if(exist('daqdevices','var'))
       handles.video.ncounters=daqdevices.Subsystems(idxCO).NumberOfChannelsAvailable;
   end
   
-  daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
+  %daq.HardwareInfo.getInstance('DisableReferenceClockSynchronization',true);
 end
 
 if(exist('videoadaptors','var'))
