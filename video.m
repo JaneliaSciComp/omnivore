@@ -98,22 +98,23 @@ if(get(handles.VideoSave,'value'))
       omnivoreHandles.video.save=repmat(omnivoreHandles.video.save(omnivoreHandles.video.curr), 1, omnivoreHandles.video.n);
       omnivoreHandles.video.directory=repmat(omnivoreHandles.video.directory(omnivoreHandles.video.curr), 1, omnivoreHandles.video.n);
     end
-    set(handles.VideoDirectory,'string',omnivoreHandles.video.directory{omnivoreHandles.video.curr});
-    set(handles.VideoDirectory,'enable','on');
-    set(handles.VideoTimeStamps,'enable','on');
-    set(handles.VideoFileFormat,'enable','on');
-    set(handles.VideoFileQuality,'enable','on');
+%     set(handles.VideoDirectory,'string',omnivoreHandles.video.directory{omnivoreHandles.video.curr});
+%     set(handles.VideoDirectory,'enable','on');
+%     set(handles.VideoTimeStamps,'enable','on');
+%     set(handles.VideoFileFormat,'enable','on');
+%     set(handles.VideoFileQuality,'enable','on');
     directory2=tmp;
   else
     set(handles.VideoSave,'value',0);
   end
 else
   omnivoreHandles.video.save(omnivoreHandles.video.curr)=0;
-  set(handles.VideoDirectory,'enable','off');
-  set(handles.VideoTimeStamps,'enable','off');
-  set(handles.VideoFileFormat,'enable','off');
-  set(handles.VideoFileQuality,'enable','off');
+%   set(handles.VideoDirectory,'enable','off');
+%   set(handles.VideoTimeStamps,'enable','off');
+%   set(handles.VideoFileFormat,'enable','off');
+%   set(handles.VideoFileQuality,'enable','off');
 end
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 guidata(hObject,handles);
 
@@ -374,6 +375,7 @@ function VideoFileQuality_Callback(hObject, eventdata, handles)
 
 omnivoreHandles = guidata(handles.omnivore);
 omnivoreHandles.video.filequality=str2num(get(hObject,'String'));
+omnivoreHandles = omnivoreHandles.update_figure(omnivoreHandles,true);
 guidata(handles.omnivore,omnivoreHandles);
 
 

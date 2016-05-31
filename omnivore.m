@@ -1019,7 +1019,6 @@ if(isfield(handles,'videoGui'))
     set(videoHandles.VideoSameROI,'value',handles.video.sameroi);
     set(videoHandles.VideoTimeStamps,'value',handles.video.timestamps);
     set(videoHandles.VideoFileFormat,'value',handles.video.fileformat);
-    set(videoHandles.VideoFileQuality,'string',handles.video.filequality);
     set(videoHandles.VideoParams,'data',handles.video.params{handles.video.curr});
     if ~handles.running
       if handles.video.ncounters>1
@@ -1045,18 +1044,29 @@ if(isfield(handles,'videoGui'))
         if(handles.video.save(handles.video.curr))
           set(videoHandles.VideoTimeStamps,'enable','on');
           set(videoHandles.VideoFileFormat,'enable','on');
-          set(videoHandles.VideoFileQuality,'enable','on');
+          set(videoHandles.VideoFileQuality,'enable','off');
           switch(handles.video.fileformats_available{handles.video.fileformat})
             case {'Motion JPEG AVI','MPEG-4'}
               set(videoHandles.VideoFileQuality,'enable','on','tooltipstring','quality (1-100)');
+              if isnan(handles.video.filequality)
+                handles.video.filequality=100;
+              else
+                handles.video.filequality = max(1,min(100,handles.video.filequality));
+              end
             case 'Motion JPEG 2000'
               set(videoHandles.VideoFileQuality,'enable','on','tooltipstring','compression ratio (>1)');
+              if isnan(handles.video.filequality)
+                handles.video.filequality=1;
+              else
+                handles.video.filequality = max(1,handles.video.filequality);
+              end
           end
         end
       else
         set(videoHandles.VideoHistogram,'enable','on');
       end
     end
+    set(videoHandles.VideoFileQuality,'string',handles.video.filequality);
   end
 end
 
